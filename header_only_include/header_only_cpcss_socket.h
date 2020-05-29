@@ -67,9 +67,9 @@ struct __cpcss_sv_sk* cpcss_open_server(const char *__pt)
 
 // functions for getting members of structs
 __sh *cpcss_client_socket_get_server(struct __cpcss_cl_sk *c)
-{   return c->_m_sv;   }
+{   return &c->_m_sv;   }
 __sh *cpcss_server_socket_get_client(struct __cpcss_sv_sk *s)
-{   return s->_m_cl;   }
+{   return &s->_m_cl;   }
 
 #endif //Included_header_only_cpcss_socket_h
 #endif
