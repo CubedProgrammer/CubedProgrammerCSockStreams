@@ -65,6 +65,39 @@ struct __cpcss_sv_sk* cpcss_open_server(const char *__pt)
 #endif
 }
 
+struct __cpcss_cl_sk *cpcss_connect_client(const char *hn,const char *pt)
+{__sh sv;
+    __sa ad, *adp;
+#ifdef _WIN32
+    ZeroMemory(&ad,sizeof(__sa));
+    ad.ai_family = AF_UNSPEC;
+    ad.ai_socktype = SOCK_STREAM;
+    ad.ai_protocol = IPPROTO_TCP;
+    if(getaddrinfo(hn,pt,&ad,&adp)==0)
+    {   sv = socket(adp->ai_family, adp->ai_socktype, adp->ai_protocol);
+        if(sv != INVALID_SOCKET)
+        {   int r = connect(sv, adp->ai_addr, adp->ai_addrlen);
+            if(r == 0)
+            {   struct __cpcss_cl_sk *csk = (struct __cpcss_cl_sk*)malloc(sizeof(struct __cpcss_cl_sk));
+                csk->_m_sv = sv, csk->_m_ar = adp;
+                return csk;   } else
+            {   closesocket(sv); return NULL;   }   } else
+        return NULL;   } else
+    return NULL;
+#elif defined __linux__
+    sv = socket(AF_INET, SOCK_STREAM, 0);
+    if(sv>=0)
+    {   ad.sin_family = AF_INET;
+        ad.sin_port=htons(atoi(pt));
+        if(inet_pton(AF_INET, hn, &ad.sin_addr)>0 && connect(sv, &ad, sizeof(ad)) == 0)
+        {   struct __cpcss_cl_sk *csk = (struct __cpcss_cl_sk*)malloc(sizeof(struct __cpcss_cl_sk));
+            csk->_m_sv = sv, csk->_m_ar = adp;
+            return csk;   } else
+        return NULL;   } else
+    return NULL;
+#endif
+}
+
 // functions for getting members of structs
 __sh *cpcss_client_socket_get_server(struct __cpcss_cl_sk *c)
 {   return &c->_m_sv;   }
