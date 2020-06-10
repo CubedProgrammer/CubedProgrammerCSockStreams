@@ -24,6 +24,7 @@ struct __cpcss_cl_sk;
 
 // functions for opening sockets
 struct __cpcss_sv_sk* cpcss_open_server(const char *port);
+struct __cpcss_sv_sk* cpcss_accept_client(struct __cpcss_sv_sk *sv);
 struct __cpcss_cl_sk* cpcss_connect_client(const char *host,const char *port);
 
 // typedefs for platforms

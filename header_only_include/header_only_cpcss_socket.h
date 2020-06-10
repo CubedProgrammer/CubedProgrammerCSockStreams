@@ -18,7 +18,7 @@ struct __cpcss_cl_sk
 
 // functions for opening sockets
 struct __cpcss_sv_sk* cpcss_open_server(const char *__pt)
-{__sh __ssk, __csk;
+{   __sh __ssk, __csk;
     __sa __ah, *__ahp;
 #ifdef _WIN32
     ZeroMemory(&__ah, sizeof(__ah));
@@ -61,6 +61,28 @@ struct __cpcss_sv_sk* cpcss_open_server(const char *__pt)
                 return __sv;   } else
             return NULL;   } else
         return NULL;   } else
+    return NULL;
+#endif
+}
+
+struct __cpcss_sv_sk* cpcss_accept_client(struct __cpcss_sv_sk *sv)
+{
+    __sh ssk = sv->_m_sv, csk;
+#ifdef _WIN32
+    csk = accept(ssk, NULL, NULL);
+    if(csk != INVALID_SOCKET)
+    {   struct __cpcss_sv_sk *__sv=(struct __cpcss_sv_sk*)malloc(sizeof(struct __cpcss_sv_sk));
+        __sv->_m_ar = sv->_m_ar, __sv->_m_sv = ssk, __sv->_m_cl = csk;
+        return __sv;   } else
+    return NULL;
+#elif defined __linux__
+    socklen_t loas = sizeof(sv->_m_ar);
+    csk = accept(__ssk, sv->_m_ar, &loas);
+
+    if(__csk >= 0)
+    {   struct __cpcss_sv_sk *__sv=(struct __cpcss_sv_sk*)malloc(sizeof(struct __cpcss_sv_sk));
+        __sv->_m_ar = sv->_m_ar, __sv->_m_sv = ssk, __sv->_m_cl = csk;
+        return __sv;   } else
     return NULL;
 #endif
 }
