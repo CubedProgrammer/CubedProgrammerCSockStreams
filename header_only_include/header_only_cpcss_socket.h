@@ -77,9 +77,9 @@ struct __cpcss_sv_sk* cpcss_accept_client(struct __cpcss_sv_sk *sv)
     return NULL;
 #elif defined __linux__
     socklen_t loas = sizeof(sv->_m_ar);
-    csk = accept(__ssk, sv->_m_ar, &loas);
+    csk = accept(ssk, sv->_m_ar, &loas);
 
-    if(__csk >= 0)
+    if(csk >= 0)
     {   struct __cpcss_sv_sk *__sv=(struct __cpcss_sv_sk*)malloc(sizeof(struct __cpcss_sv_sk));
         __sv->_m_ar = sv->_m_ar, __sv->_m_sv = ssk, __sv->_m_cl = csk;
         return __sv;   } else
