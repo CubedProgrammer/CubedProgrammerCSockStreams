@@ -10,88 +10,88 @@
 #endif
 
 // structs for sockets
-struct __cpcss_sv_sk
-  {   __sh _m_sv, _m_cl; __sa *_m_ar;   };
+struct cpcss____ss
+  {   cpcss____sh _m_sv, _m_cl; cpcss____sa *_m_ar;   };
 
-struct __cpcss_cl_sk
-  {   __sh _m_sv; __sa *_m_ar;   };
+struct cpcss____cs
+  {   cpcss____sh _m_sv; cpcss____sa *_m_ar;   };
 
 // functions for opening sockets
-struct __cpcss_sv_sk* cpcss_open_server(const char *__pt)
-{   __sh __ssk, __csk;
-    __sa __ah, *__ahp;
+struct cpcss____ss* cpcss_open_server(const char *__pt)
+{   cpcss____sh ssk, csk;
+    cpcss____sa ah, *ahp;
 #ifdef _WIN32
-    ZeroMemory(&__ah, sizeof(__ah));
-      __ah.ai_family = AF_UNSPEC, __ah.ai_socktype = SOCK_STREAM;
-      __ah.ai_protocol = IPPROTO_TCP, __ah.ai_flags = AI_PASSIVE;
-    int __ars=getaddrinfo(NULL, __pt, &__ah, &__ahp);
-    if(__ars == 0)
-    {   __ssk=socket(__ahp->ai_family, __ahp->ai_socktype, __ahp->ai_protocol);
-        if(__ssk != INVALID_SOCKET)
-        {   __ars = bind(__ssk, __ahp->ai_addr, __ahp->ai_addrlen);
-            if(__ars == 0)
-            {   __ars = listen(__ssk, SOMAXCONN);
-                if(__ars == 0)
-                {   __csk = accept(__ssk, NULL, NULL);
-                    if(__csk != INVALID_SOCKET)
-                    {   struct __cpcss_sv_sk *__sv=(struct __cpcss_sv_sk*)malloc(sizeof(struct __cpcss_sv_sk));
-                        __sv->_m_ar = __ahp, __sv->_m_sv = __ssk, __sv->_m_cl = __csk;
-                        return __sv;   } else
+    ZeroMemory(&ah, sizeof(ah));
+      ah.ai_family = AF_UNSPEC, ah.ai_socktype = SOCK_STREAM;
+      ah.ai_protocol = IPPROTO_TCP, ah.ai_flags = AI_PASSIVE;
+    int ars=getaddrinfo(NULL, __pt, &ah, &ahp);
+    if(ars == 0)
+    {   ssk=socket(ahp->ai_family, ahp->ai_socktype, ahp->ai_protocol);
+        if(ssk != INVALID_SOCKET)
+        {   ars = bind(ssk, ahp->ai_addr, ahp->ai_addrlen);
+            if(ars == 0)
+            {   ars = listen(ssk, SOMAXCONN);
+                if(ars == 0)
+                {   csk = accept(ssk, NULL, NULL);
+                    if(csk != INVALID_SOCKET)
+                    {   struct cpcss____ss *sv=(struct cpcss____ss*)malloc(sizeof(struct cpcss____ss));
+                        sv->_m_ar = ahp, sv->_m_sv = ssk, sv->_m_cl = csk;
+                        return sv;   } else
                     return NULL;   } else
                 return NULL;   } else
             return NULL;   } else
         return NULL;   } else
     return NULL;
 #elif defined __linux__
-    __ssk=socket(AF_INET, SOCK_STREAM, 0);
-    __ahp=&__ah;
+    ssk=socket(AF_INET, SOCK_STREAM, 0);
+    ahp=&ah;
 
-    if (__ssk)
-    {   __ah.sin_family = AF_INET;
-        __ah.sin_addr.s_addr = INADDR_ANY;
-        __ah.sin_port = htons(atoi(__pt));
+    if (ssk)
+    {   ah.sin_family = AF_INET;
+        ah.sin_addr.s_addr = INADDR_ANY;
+        ah.sin_port = htons(atoi(__pt));
 
-        if(bind(__ssk, __ahp, sizeof(__ah)) >= 0 && listen(__ssk, 3) >= 0)
-        {   socklen_t loas = sizeof(__ahp);
-            __csk = accept(__ssk, __ahp, &loas);
+        if(bind(ssk, ahp, sizeof(ah)) >= 0 && listen(ssk, 3) >= 0)
+        {   socklen_t loas = sizeof(ahp);
+            csk = accept(ssk, ahp, &loas);
 
-            if(__csk >= 0)
-            {   struct __cpcss_sv_sk *__sv=(struct __cpcss_sv_sk*)malloc(sizeof(struct __cpcss_sv_sk));
-                __sv->_m_ar = __ahp, __sv->_m_sv = __ssk, __sv->_m_cl = __csk;
-                return __sv;   } else
+            if(csk >= 0)
+            {   struct cpcss____ss *sv=(struct cpcss____ss*)malloc(sizeof(struct cpcss____ss));
+                sv->_m_ar = ahp, sv->_m_sv = ssk, sv->_m_cl = csk;
+                return sv;   } else
             return NULL;   } else
         return NULL;   } else
     return NULL;
 #endif
 }
 
-struct __cpcss_sv_sk* cpcss_accept_client(struct __cpcss_sv_sk *sv)
+struct cpcss____ss* cpcss_accept_client(struct cpcss____ss *sv)
 {
-    __sh ssk = sv->_m_sv, csk;
+    cpcss____sh ssk = sv->_m_sv, csk;
 #ifdef _WIN32
     csk = accept(ssk, NULL, NULL);
     if(csk != INVALID_SOCKET)
-    {   struct __cpcss_sv_sk *__sv=(struct __cpcss_sv_sk*)malloc(sizeof(struct __cpcss_sv_sk));
-        __sv->_m_ar = sv->_m_ar, __sv->_m_sv = ssk, __sv->_m_cl = csk;
-        return __sv;   } else
+    {   struct cpcss____ss *nsv=(struct cpcss____ss*)malloc(sizeof(struct cpcss____ss));
+        nsv->_m_ar = sv->_m_ar, nsv->_m_sv = ssk, nsv->_m_cl = csk;
+        return nsv;   } else
     return NULL;
 #elif defined __linux__
     socklen_t loas = sizeof(sv->_m_ar);
     csk = accept(ssk, sv->_m_ar, &loas);
 
     if(csk >= 0)
-    {   struct __cpcss_sv_sk *__sv=(struct __cpcss_sv_sk*)malloc(sizeof(struct __cpcss_sv_sk));
-        __sv->_m_ar = sv->_m_ar, __sv->_m_sv = ssk, __sv->_m_cl = csk;
-        return __sv;   } else
+    {   struct cpcss____ss *nsv=(struct cpcss____ss*)malloc(sizeof(struct cpcss____ss));
+        nsv->_m_ar = sv->_m_ar, nsv->_m_sv = ssk, nsv->_m_cl = csk;
+        return nsv;   } else
     return NULL;
 #endif
 }
 
-struct __cpcss_cl_sk *cpcss_connect_client(const char *hn,const char *pt)
-{__sh sv;
-    __sa ad, *adp;
+struct cpcss____cs *cpcss_connect_client(const char *hn,const char *pt)
+{cpcss____sh sv;
+    cpcss____sa ad, *adp;
 #ifdef _WIN32
-    ZeroMemory(&ad,sizeof(__sa));
+    ZeroMemory(&ad,sizeof(cpcss____sa));
     ad.ai_family = AF_UNSPEC;
     ad.ai_socktype = SOCK_STREAM;
     ad.ai_protocol = IPPROTO_TCP;
@@ -100,7 +100,7 @@ struct __cpcss_cl_sk *cpcss_connect_client(const char *hn,const char *pt)
         if(sv != INVALID_SOCKET)
         {   int r = connect(sv, adp->ai_addr, adp->ai_addrlen);
             if(r == 0)
-            {   struct __cpcss_cl_sk *csk = (struct __cpcss_cl_sk*)malloc(sizeof(struct __cpcss_cl_sk));
+            {   struct cpcss____ss *csk = (struct cpcss____ss*)malloc(sizeof(struct cpcss____ss));
                 csk->_m_sv = sv, csk->_m_ar = adp;
                 return csk;   } else
             {   closesocket(sv); return NULL;   }   } else
@@ -112,7 +112,7 @@ struct __cpcss_cl_sk *cpcss_connect_client(const char *hn,const char *pt)
     {   ad.sin_family = AF_INET;
         ad.sin_port=htons(atoi(pt));
         if(inet_pton(AF_INET, hn, &ad.sin_addr)>0 && connect(sv, &ad, sizeof(ad)) == 0)
-        {   struct __cpcss_cl_sk *csk = (struct __cpcss_cl_sk*)malloc(sizeof(struct __cpcss_cl_sk));
+        {   struct cpcss____ss *csk = (struct cpcss____ss*)malloc(sizeof(struct cpcss____ss));
             csk->_m_sv = sv, csk->_m_ar = adp;
             return csk;   } else
         return NULL;   } else
@@ -121,9 +121,9 @@ struct __cpcss_cl_sk *cpcss_connect_client(const char *hn,const char *pt)
 }
 
 // functions for getting members of structs
-__sh *cpcss_client_socket_get_server(struct __cpcss_cl_sk *c)
+cpcss____sh *cpcss_client_socket_get_server(struct cpcss____cs *c)
 {   return &c->_m_sv;   }
-__sh *cpcss_server_socket_get_client(struct __cpcss_sv_sk *s)
+cpcss____sh *cpcss_server_socket_get_client(struct cpcss____ss *s)
 {   return &s->_m_cl;   }
 
 #endif //Included_header_only_cpcss_socket_h

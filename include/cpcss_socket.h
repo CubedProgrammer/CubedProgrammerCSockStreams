@@ -19,34 +19,35 @@
 #endif
 
 // structs for sockets
-struct __cpcss_sv_sk;
-struct __cpcss_cl_sk;
+// server socket and client socket
+struct cpcss____ss;
+struct cpcss____cs;
 
 // functions for opening sockets
-struct __cpcss_sv_sk* cpcss_open_server(const char *port);
-struct __cpcss_sv_sk* cpcss_accept_client(struct __cpcss_sv_sk *sv);
-struct __cpcss_cl_sk* cpcss_connect_client(const char *host,const char *port);
+struct cpcss____ss* cpcss_open_server(const char *port);
+struct cpcss____ss* cpcss_accept_client(struct cpcss____ss *sv);
+struct cpcss____cs* cpcss_connect_client(const char *host,const char *port);
 
 // typedefs for platforms
 #ifdef _WIN32
 
-typedef SOCKET __sh;
-typedef struct addrinfo __sa;
+typedef SOCKET cpcss____sh;
+typedef struct addrinfo cpcss____sa;
 
 #elif defined __linux__
 
-typedef int __sh;
-typedef struct sockaddr_in __sa;
+typedef int cpcss____sh;
+typedef struct sockaddr_in cpcss____sa;
 
 #endif
 
 // functions for getting members of structs
-__sh *cpcss_client_socket_get_server(struct __cpcss_cl_sk *c);
-__sh *cpcss_server_socket_get_client(struct __cpcss_sv_sk *s);
+cpcss____sh *cpcss_client_socket_get_server(struct cpcss____cs *c);
+cpcss____sh *cpcss_server_socket_get_client(struct cpcss____ss *s);
 
 // typedefs
-typedef struct __cpcss_sv_sk* cpcss_server_sock;
-typedef struct __cpcss_cl_sk* cpcss_client_sock;
+typedef struct cpcss____ss* cpcss_server_sock;
+typedef struct cpcss____cs* cpcss_client_sock;
 
 #endif //Included_cpcss_socket_h
 #endif
