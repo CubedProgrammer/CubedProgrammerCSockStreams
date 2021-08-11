@@ -3,6 +3,10 @@
 #define Included_header_only_cpcss_socket_h
 
 #include<cpcss_socket.h>
+#ifdef __linux__
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#endif
 
 // link the dll on msvc
 #ifdef _MSC_VER
@@ -51,9 +55,9 @@ struct cpcss____ss* cpcss_open_server(const char *__pt)
         ah.sin_addr.s_addr = INADDR_ANY;
         ah.sin_port = htons(atoi(__pt));
 
-        if(bind(ssk, ahp, sizeof(ah)) >= 0 && listen(ssk, 3) >= 0)
+        if(bind(ssk, (struct sockaddr *)ahp, sizeof(ah)) >= 0 && listen(ssk, 3) >= 0)
         {   socklen_t loas = sizeof(ahp);
-            csk = accept(ssk, ahp, &loas);
+            csk = accept(ssk, (struct sockaddr *)ahp, &loas);
 
             if(csk >= 0)
             {   struct cpcss____ss *sv=(struct cpcss____ss*)malloc(sizeof(struct cpcss____ss));
@@ -77,7 +81,7 @@ struct cpcss____ss* cpcss_accept_client(struct cpcss____ss *sv)
     return NULL;
 #elif defined __linux__
     socklen_t loas = sizeof(sv->_m_ar);
-    csk = accept(ssk, sv->_m_ar, &loas);
+    csk = accept(ssk, (struct sockaddr *)sv->_m_ar, &loas);
 
     if(csk >= 0)
     {   struct cpcss____ss *nsv=(struct cpcss____ss*)malloc(sizeof(struct cpcss____ss));
@@ -111,8 +115,8 @@ struct cpcss____cs *cpcss_connect_client(const char *hn,const char *pt)
     if(sv>=0)
     {   ad.sin_family = AF_INET;
         ad.sin_port=htons(atoi(pt));
-        if(inet_pton(AF_INET, hn, &ad.sin_addr)>0 && connect(sv, &ad, sizeof(ad)) == 0)
-        {   struct cpcss____ss *csk = (struct cpcss____ss*)malloc(sizeof(struct cpcss____ss));
+        if(inet_pton(AF_INET, hn, &ad.sin_addr)>0 && connect(sv, (struct sockaddr *)&ad, sizeof(ad)) == 0)
+        {   struct cpcss____cs *csk = (struct cpcss____cs*)malloc(sizeof(struct cpcss____ss));
             csk->_m_sv = sv, csk->_m_ar = adp;
             return csk;   } else
         return NULL;   } else
