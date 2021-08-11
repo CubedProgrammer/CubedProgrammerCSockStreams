@@ -1,13 +1,13 @@
 #ifndef __cplusplus
-#ifndef Included_sockstream_h
-#define Included_sockstream_h
+#ifndef Included_cpcss_sockstream_h
+#define Included_cpcss_sockstream_h
 
 #ifndef HEADER_ONLY_CPC
-#include <istream.h>
-#include <ostream.h>
+#include <cpcio_istream.h>
+#include <cpcio_ostream.h>
 #else
-#include <header_only_istream.h>
-#include <header_only_ostream.h>
+#include <header_only_cpcio_istream.h>
+#include <header_only_cpcio_ostream.h>
 #endif
 #include <cpcss_socket.h>
 

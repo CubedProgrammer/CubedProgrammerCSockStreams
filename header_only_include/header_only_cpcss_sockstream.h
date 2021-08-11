@@ -1,6 +1,6 @@
 #ifndef __cplusplus
-#ifndef Included_header_only_sockstream_h
-#define Included_header_only_sockstream_h
+#ifndef Included_header_only_cpcss_sockstream_h
+#define Included_header_only_cpcss_sockstream_h
 
 #include <cpcss_sockstream.h>
 
