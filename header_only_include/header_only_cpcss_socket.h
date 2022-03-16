@@ -3,7 +3,7 @@
 #define Included_header_only_cpcss_socket_h
 
 #include<cpcss_socket.h>
-#ifdef __linux__
+#ifndef _WIN32
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #endif
@@ -46,7 +46,7 @@ struct cpcss____ss* cpcss_open_server(const char *__pt)
             return NULL;   } else
         return NULL;   } else
     return NULL;
-#elif defined __linux__
+#else
     ssk=socket(AF_INET, SOCK_STREAM, 0);
     ahp=&ah;
 
@@ -79,7 +79,7 @@ struct cpcss____ss* cpcss_accept_client(struct cpcss____ss *sv)
         nsv->_m_ar = sv->_m_ar, nsv->_m_sv = ssk, nsv->_m_cl = csk;
         return nsv;   } else
     return NULL;
-#elif defined __linux__
+#else
     socklen_t loas = sizeof(sv->_m_ar);
     csk = accept(ssk, (struct sockaddr *)sv->_m_ar, &loas);
 
@@ -93,7 +93,7 @@ struct cpcss____ss* cpcss_accept_client(struct cpcss____ss *sv)
 
 struct cpcss____cs *cpcss_connect_client(const char *hn,const char *pt)
 {cpcss____sh sv;
-    cpcss____sa ad, *adp;
+    cpcss____sa ad, *adp = &ad;
 #ifdef _WIN32
     ZeroMemory(&ad,sizeof(cpcss____sa));
     ad.ai_family = AF_UNSPEC;
@@ -110,7 +110,7 @@ struct cpcss____cs *cpcss_connect_client(const char *hn,const char *pt)
             {   closesocket(sv); return NULL;   }   } else
         return NULL;   } else
     return NULL;
-#elif defined __linux__
+#else
     sv = socket(AF_INET, SOCK_STREAM, 0);
     if(sv>=0)
     {   ad.sin_family = AF_INET;
@@ -124,6 +124,14 @@ struct cpcss____cs *cpcss_connect_client(const char *hn,const char *pt)
 #endif
 }
 
+int cpcss_close_server(struct cpcss____ss *sv)
+{cpcss____sh aso = sv->_m_sv;
+#ifdef _WIN32
+    return shutdown(aso, SD_BOTH);
+#else
+    return shutdown(aso, SHUT_RDWR);
+#endif
+}
 // functions for getting members of structs
 cpcss____sh *cpcss_client_socket_get_server(struct cpcss____cs *c)
 {   return &c->_m_sv;   }

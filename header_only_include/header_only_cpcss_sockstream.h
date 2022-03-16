@@ -24,7 +24,7 @@ int cpcss_read_ss(void *src,
 {cpcss____sh *as = src;
 #ifdef _WIN32
     return recv(*as, arr, size,0);
-#elif defined __linux__
+#else
     return read(*as, arr, size);
 #endif
 }
@@ -37,10 +37,9 @@ int cpcss_write_ss(void *dest,
 int cpcss_close_ss(void *stream)
 {cpcss____sh *aso = stream;
 #ifdef _WIN32
-    shutdown(*aso, SD_BOTH);
     return closesocket(*aso);
-#elif defined __linux__
-    shutdown(*aso, SHUT_RDWR);
+#else
+    //shutdown(*aso, SHUT_RDWR);
     return close(*aso);
 #endif
 }

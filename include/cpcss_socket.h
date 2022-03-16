@@ -10,7 +10,7 @@
 #include <ws2tcpip.h>
 #include <winsock2.h>
 
-#elif defined __linux__
+#else
 
 #include <sys/socket.h>
 #include <unistd.h>
@@ -26,6 +26,7 @@ struct cpcss____cs;
 struct cpcss____ss* cpcss_open_server(const char *port);
 struct cpcss____ss* cpcss_accept_client(struct cpcss____ss *sv);
 struct cpcss____cs* cpcss_connect_client(const char *host,const char *port);
+int cpcss_close_server(struct cpcss____ss *sv);
 
 // typedefs for platforms
 #ifdef _WIN32
@@ -33,7 +34,7 @@ struct cpcss____cs* cpcss_connect_client(const char *host,const char *port);
 typedef SOCKET cpcss____sh;
 typedef struct addrinfo cpcss____sa;
 
-#elif defined __linux__
+#else
 
 typedef int cpcss____sh;
 typedef struct sockaddr_in cpcss____sa;
