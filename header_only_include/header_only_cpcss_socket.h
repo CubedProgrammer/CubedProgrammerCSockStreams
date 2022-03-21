@@ -125,11 +125,11 @@ struct cpcss____cs *cpcss_connect_client(const char *hn,const char *pt)
 }
 
 int cpcss_close_server(struct cpcss____ss *sv)
-{cpcss____sh aso = sv->_m_sv;
+{cpcss____sh aso = sv->_m_cl;
 #ifdef _WIN32
-    return shutdown(aso, SD_BOTH);
+	return shutdown(aso);
 #else
-    return shutdown(aso, SHUT_RDWR);
+    return close(aso);
 #endif
 }
 // functions for getting members of structs

@@ -35,14 +35,7 @@ int cpcss_write_ss(void *dest,
 {   cpcss____sh *ad = dest; return send(*ad, arr, size, 0);   }
 
 int cpcss_close_ss(void *stream)
-{cpcss____sh *aso = stream;
-#ifdef _WIN32
-    return closesocket(*aso);
-#else
-    //shutdown(*aso, SHUT_RDWR);
-    return close(*aso);
-#endif
-}
+{   return 0;   }
 
 #endif //Included_header_only_sockstream_h
 #endif //__cplusplus
