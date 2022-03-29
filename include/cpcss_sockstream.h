@@ -25,6 +25,9 @@ struct cpcio____ostream *open_client_ostream(struct cpcss____ss *ss);
 struct cpcio____istream *open_server_istream(struct cpcss____cs *cs);
 struct cpcio____ostream *open_server_ostream(struct cpcss____cs *cs);
 
+// are there bytes that were sent but yet to be read
+int cpcss_ready(void *src);
+
 // reader
 int cpcss_read_ss(void *src,
                     char *arr,
