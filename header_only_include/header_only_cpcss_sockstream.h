@@ -35,6 +35,7 @@ struct cpcio____ostream *open_server_ostream(struct cpcss____cs *cs)
 int cpcss_ready(void *src)
 {
 #ifdef _WIN32
+	return 0;
 #else
 	cpcss____sh *handlep = src, handle = *handlep;
 	fd_set fds, *fdsp = &fds;
