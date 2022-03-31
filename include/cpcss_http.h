@@ -13,14 +13,12 @@ typedef uint16_t cpcss_req_method_t;
 
 // struct for http request
 struct cpcss____http_request
-{
-	cpcss_req_method_t meth;
-	char *requrl;
-	uint16_t port;
-	char **headers;
-	size_t hcnt, hbuckets;
-	char *body;
-};
+{   cpcss_req_method_t meth;
+    char *requrl;
+    uint16_t port;
+    char **headers;
+    size_t hcnt, hbuckets;
+    char *body;   };
 
 // typedefs for the struct
 typedef struct cpcss____http_request cpcss_http_req, *pcpcss_http_req;
