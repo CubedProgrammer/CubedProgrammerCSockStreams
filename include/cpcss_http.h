@@ -3,11 +3,15 @@
 #define Included_cpcss_http_h
 #include<stdint.h>
 
-#define GET 997
-#define PUT 998
-#define HEAD 999
-#define POST 1000
-#define DELETE 1001
+#define CPCSS_GET 997
+#define CPCSS_PUT 998
+#define CPCSS_HEAD 999
+#define CPCSS_POST 1000
+#define CPCSS_PATCH 1001
+#define CPCSS_TRACE 1002
+#define CPCSS_DELETE 1003
+#define CPCSS_OPTIONS 1004
+#define CPCSS_CONNECT 1005
 
 typedef uint16_t cpcss_req_method_t;
 

@@ -128,7 +128,16 @@ int cpcss_add_header(pcpcss_http_req this, const char *key, const char *val)
             return-1;   }   } else
 	return-1;   }
 
-int cpcss_erase_header(pcpcss_http_req this, const char *key);
+int cpcss_erase_header(pcpcss_http_req this, const char *key)
+{   if(this->headers != NULL)
+    {   char **bucket = cpcss_http____get_bucket(this, key);
+        if(*bucket != NULL)
+        {   free(*bucket);
+            *bucket = NULL;
+            --this->hcnt;
+            return 0;   } else
+        return-1;   } else
+    return-1;   }
 
 size_t cpcss_request_size(cpcpcss_http_req this);
 
