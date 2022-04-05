@@ -60,6 +60,7 @@ size_t cpcss_request_size(cpcpcss_http_req this);
 void cpcss_request_str(char *str, cpcpcss_http_req this);
 
 // frees resources used by the request object
+// if the this pointer points to heap allocated memory, it needs to be freed separately
 void cpcss_free_request(pcpcss_http_req this);
 
 #endif

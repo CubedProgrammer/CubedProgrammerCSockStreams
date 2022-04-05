@@ -82,6 +82,40 @@ int cpcss_http____check_resize(pcpcss_http_req this)
         succ = -1;   }
     return succ;   }
 
+int cpcss_http____req_meth_str(char *str, cpcss_req_method_t meth)
+{   int succ = 0;
+    switch(meth)
+    {   case CPCSS_GET:
+            strcpy(str, "GET");
+            break;
+        case CPCSS_PUT:
+            strcpy(str, "PUT");
+            break;
+        case CPCSS_HEAD:
+            strcpy(str, "HEAD");
+            break;
+        case CPCSS_POST:
+            strcpy(str, "POST");
+            break;
+        case CPCSS_PATCH:
+            strcpy(str, "PATCH");
+            break;
+        case CPCSS_TRACE:
+            strcpy(str, "TRACE");
+            break;
+        case CPCSS_DELETE:
+            strcpy(str, "DELETE");
+            break;
+        case CPCSS_OPTIONS:
+            strcpy(str, "OPTIONS");
+            break;
+        case CPCSS_CONNECT:
+            strcpy(str, "CONNECT");
+            break;
+        default:
+        	succ = -1;   }
+    return succ;   }
+
 int cpcss_set_header(pcpcss_http_req this, const char *key, const char *val)
 {   if(this->headers != NULL)
     {   cpcss_http____check_resize(this);
@@ -139,10 +173,42 @@ int cpcss_erase_header(pcpcss_http_req this, const char *key)
         return-1;   } else
     return-1;   }
 
-size_t cpcss_request_size(cpcpcss_http_req this);
+size_t cpcss_request_size(cpcpcss_http_req this)
+{
+    char reqmeth[12];
+    cpcss_http____req_meth_str(reqmeth, this->meth);
+    size_t cnt = strlen(reqmeth) + 1;
+    char *pth = strchr(this->requrl, '/');
+    if(pth != NULL)
+        cnt += strlen(pth) + 11;
+    else
+        cnt += 12;
+    size_t klen;
+    for(char **it = this->headers; it != this->headers + this->hbuckets; ++it)
+    {   if(*it != NULL)
+        {   klen = strlen(*it);
+            cnt += klen + 2;
+            cnt += strlen(*it + klen + 1) + 2;   }   }
+    cnt += 2;
+    if(this->body != NULL)
+    	cnt += strlen(this->body);
+    return cnt;
+}
 
 void cpcss_request_str(char *str, cpcpcss_http_req this)
 {   char *strptr = str;
+    cpcss_http____req_meth_str(strptr, this->meth);
+    strptr += strlen(strptr);
+    *strptr = ' ';
+    ++strptr;
+    char *pth = strchr(this->requrl, '/');
+    if(pth != NULL)
+    {   strcpy(strptr, pth);
+        strptr += strlen(strptr);   } else
+    *strptr++ = '/';
+    *strptr++ = ' ';
+    strcpy(strptr, "HTTP/1.1\r\n");
+    strptr += strlen(strptr);
     size_t klen;
     for(char **it = this->headers; it != this->headers + this->hbuckets; ++it)
     {   if(*it != NULL)
