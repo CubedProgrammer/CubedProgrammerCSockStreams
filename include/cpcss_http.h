@@ -47,6 +47,10 @@ int cpcss_add_header(pcpcss_http_req this, const char *key, const char *val);
 // returns zero on success
 int cpcss_erase_header(pcpcss_http_req this, const char *key);
 
+// Gets the value of a header field
+// Returns NULL if the field does not exist
+const char *cpcss_get_header(cpcpcss_http_req this, const char *key);
+
 // makes the request to an http server
 // returns zero on success
 int cpcss_make_request(cpcpcss_http_req this);

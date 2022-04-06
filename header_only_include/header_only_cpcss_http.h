@@ -34,26 +34,42 @@ int cpcss_init_http_request(pcpcss_http_req this, const char *url, uint16_t port
     succ = -1;
     return succ;   }
 
+int cpcss_http____insens_strcmp(const char *x, const char *y)
+{   char chx, chy;
+    int e = 1;
+    for(const char *xit = x, *yit = y; e && *xit != '\0' && *yit != '\0'; ++xit, ++yit)
+    {   chx = *xit, chy = *yit;
+        if(chx >= 'A' && chx <= 'Z')
+            chx += 32;
+        if(chy >= 'A' && chy <= 'Z')
+            chy += 32;
+        e = chx == chy;   }
+    return e;   }
+
 uint64_t cpcss_http____hash_key(const char *key)
 {   uint64_t hsh;
     uint64_t x = 0, y = 0, z = 0;
+    char ch;
     for(const char *it = key; *it != '\0'; ++it)
-    {   x *= P_CONST_A;
-        x += P_CONST_B + *it;
+    {   ch = *it;
+        if(ch >= 'A' && ch <= 'Z')
+            ch += 32;
+        x *= P_CONST_A;
+        x += P_CONST_B + ch;
         y *= P_CONST_B;
-        y += P_CONST_C + *it;
+        y += P_CONST_C + ch;
         z *= P_CONST_C;
-        z += P_CONST_A + *it;   }
+        z += P_CONST_A + ch;   }
     hsh = x + y + z;
     return hsh;   }
 
-char **cpcss_http____get_bucket(pcpcss_http_req this, const char *key)
+char **cpcss_http____get_bucket(cpcpcss_http_req this, const char *key)
 {   uint64_t hsh = cpcss_http____hash_key(key);
     hsh %= this->hbuckets;
     char **it;
     char *tmp = NULL;
     for(it = this->headers + hsh; *it != NULL; ++it)
-    {   if(strcmp(*it, key) == 0)
+    {   if(cpcss_http____insens_strcmp(*it, key))
         {   tmp = *it;
             *it = NULL;
             --it;   } else if(it + 1 == this->headers + this->hbuckets)
@@ -173,9 +189,15 @@ int cpcss_erase_header(pcpcss_http_req this, const char *key)
         return-1;   } else
     return-1;   }
 
+const char *cpcss_get_header(cpcpcss_http_req this, const char *key)
+{   char **bucket = cpcss_http____get_bucket(this, key);
+    const char *val = *bucket;
+    if(val != NULL)
+    	val += strlen(val) + 1;
+    return val;   }
+
 size_t cpcss_request_size(cpcpcss_http_req this)
-{
-    char reqmeth[12];
+{   char reqmeth[12];
     cpcss_http____req_meth_str(reqmeth, this->meth);
     size_t cnt = strlen(reqmeth) + 1;
     char *pth = strchr(this->requrl, '/');
@@ -192,8 +214,7 @@ size_t cpcss_request_size(cpcpcss_http_req this)
     cnt += 2;
     if(this->body != NULL)
     	cnt += strlen(this->body);
-    return cnt;
-}
+    return cnt;   }
 
 void cpcss_request_str(char *str, cpcpcss_http_req this)
 {   char *strptr = str;
