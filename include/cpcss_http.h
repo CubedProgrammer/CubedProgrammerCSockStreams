@@ -14,12 +14,22 @@
 #define CPCSS_CONNECT 1005
 
 typedef uint16_t cpcss_req_method_t;
+typedef uint16_t cpcss_res_code_t;
+
+// struct for request information
+struct cpcss____http_request_info
+{   cpcss_req_method_t meth;
+    char *requrl;
+    uint16_t port;   };
+
+// request response union
+union cpcss____http_rru
+{   struct cpcss____http_request_info req;
+    cpcss_res_code_t res;   };
 
 // struct for http request
 struct cpcss____http_request
-{   cpcss_req_method_t meth;
-    char *requrl;
-    uint16_t port;
+{   union cpcss____http_rru rru;
     char **headers;
     size_t hcnt, hbuckets;
     char *body;   };
@@ -52,8 +62,9 @@ int cpcss_erase_header(pcpcss_http_req this, const char *key);
 const char *cpcss_get_header(cpcpcss_http_req this, const char *key);
 
 // makes the request to an http server
+// res will be filled with the server's response
 // returns zero on success
-int cpcss_make_request(cpcpcss_http_req this);
+int cpcss_make_request(cpcpcss_http_req this, pcpcss_http_req res);
 
 // gets the size of the request in bytes if it were to be sent
 // allocate this size plus one for str of cpcss_request_str
@@ -62,6 +73,14 @@ size_t cpcss_request_size(cpcpcss_http_req this);
 // writes request to a string
 // str must have the capacity to store the request
 void cpcss_request_str(char *str, cpcpcss_http_req this);
+
+// gets the size of the response in bytes if it were to be sent
+// allocate this size plus one for str of cpcss_request_str
+size_t cpcss_response_size(cpcpcss_http_req this);
+
+// writes response to a string
+// str must have the capacity to store the request
+void cpcss_response_str(char *str, cpcpcss_http_req this);
 
 // frees resources used by the request object
 // if the this pointer points to heap allocated memory, it needs to be freed separately

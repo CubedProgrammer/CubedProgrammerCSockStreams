@@ -11,7 +11,7 @@
 
 int cpcss_init_http_request(pcpcss_http_req this, const char *url, uint16_t port)
 {   size_t len = strlen(url);
-    this->port = port;
+    this->rru.req.port = port;
     this->body = NULL;
     this->hcnt = 0;
     this->hbuckets = 60;
@@ -20,16 +20,16 @@ int cpcss_init_http_request(pcpcss_http_req this, const char *url, uint16_t port
     if(this->headers != NULL)
     {   for(char **it = this->headers; it != this->headers + this->hbuckets; ++it)
         	*it = NULL;
-        this->requrl = malloc(1 + len);
-        if(this->requrl != NULL)
-        {   strcpy(this->requrl, url);
-            char *slash = strchr(this->requrl, '/');
+        this->rru.req.requrl = malloc(1 + len);
+        if(this->rru.req.requrl != NULL)
+        {   strcpy(this->rru.req.requrl, url);
+            char *slash = strchr(this->rru.req.requrl, '/');
             if(slash != NULL)
             {   *slash = '\0';
-                if(cpcss_set_header(this, "host", this->requrl))
+                if(cpcss_set_header(this, "host", this->rru.req.requrl))
                     succ = -1; else
                 *slash = '/';   } else
-            return cpcss_set_header(this, "host", this->requrl);   } else
+            return cpcss_set_header(this, "host", this->rru.req.requrl);   } else
         return-1;   } else
     succ = -1;
     return succ;   }
@@ -196,33 +196,42 @@ const char *cpcss_get_header(cpcpcss_http_req this, const char *key)
     	val += strlen(val) + 1;
     return val;   }
 
-size_t cpcss_request_size(cpcpcss_http_req this)
-{   char reqmeth[12];
-    cpcss_http____req_meth_str(reqmeth, this->meth);
-    size_t cnt = strlen(reqmeth) + 1;
-    char *pth = strchr(this->requrl, '/');
-    if(pth != NULL)
-        cnt += strlen(pth) + 11;
-    else
-        cnt += 12;
-    size_t klen;
+int cpcss_make_request(cpcpcss_http_req this, pcpcss_http_req res)
+{   int succ = 0;
+    return succ;   }
+
+size_t cpcss____reqsz(cpcpcss_http_req this)
+{   size_t cnt = 0, klen;
     for(char **it = this->headers; it != this->headers + this->hbuckets; ++it)
     {   if(*it != NULL)
         {   klen = strlen(*it);
             cnt += klen + 2;
             cnt += strlen(*it + klen + 1) + 2;   }   }
-    cnt += 2;
+	cnt += 2;
     if(this->body != NULL)
-    	cnt += strlen(this->body);
+        cnt += strlen(this->body);
+    return cnt;
+}
+
+size_t cpcss_request_size(cpcpcss_http_req this)
+{   char reqmeth[12];
+    cpcss_http____req_meth_str(reqmeth, this->rru.req.meth);
+    size_t cnt = strlen(reqmeth) + 1;
+    char *pth = strchr(this->rru.req.requrl, '/');
+    if(pth != NULL)
+        cnt += strlen(pth) + 11;
+    else
+        cnt += 12;
+    cnt += cpcss____reqsz(this);
     return cnt;   }
 
 void cpcss_request_str(char *str, cpcpcss_http_req this)
 {   char *strptr = str;
-    cpcss_http____req_meth_str(strptr, this->meth);
+    cpcss_http____req_meth_str(strptr, this->rru.req.meth);
     strptr += strlen(strptr);
     *strptr = ' ';
     ++strptr;
-    char *pth = strchr(this->requrl, '/');
+    char *pth = strchr(this->rru.req.requrl, '/');
     if(pth != NULL)
     {   strcpy(strptr, pth);
         strptr += strlen(strptr);   } else
@@ -248,9 +257,15 @@ void cpcss_request_str(char *str, cpcpcss_http_req this)
     if(this->body != NULL)
         strcpy(strptr, this->body);   }
 
+size_t cpcss_response_size(cpcpcss_http_req this)
+{   size_t cnt = 15 + cpcss____reqsz(this);
+    return cnt;   }
+
+void cpcss_response_str(char *str, cpcpcss_http_req this);
+
 void cpcss_free_request(pcpcss_http_req this)
-{   if(this->requrl != NULL)
-        free(this->requrl);
+{   if(this->rru.req.requrl != NULL)
+        free(this->rru.req.requrl);
 	if(this->headers != NULL)
 	{   for(char **it = this->headers; it != this->headers + this->hbuckets; ++it)
         {   if(*it != NULL)
