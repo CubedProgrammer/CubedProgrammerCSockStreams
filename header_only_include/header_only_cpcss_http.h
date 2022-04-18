@@ -12,6 +12,7 @@
 int cpcss_init_http_request(pcpcss_http_req this, const char *url, uint16_t port)
 {   size_t len = strlen(url);
     this->rru.req.port = port;
+    this->rru.req.meth = CPCSS_GET;
     this->body = NULL;
     this->hcnt = 0;
     this->hbuckets = 60;
@@ -29,9 +30,27 @@ int cpcss_init_http_request(pcpcss_http_req this, const char *url, uint16_t port
                 if(cpcss_set_header(this, "host", this->rru.req.requrl))
                     succ = -1; else
                 *slash = '/';   } else
-            return cpcss_set_header(this, "host", this->rru.req.requrl);   } else
+            return cpcss_set_header(this, "host", "/");   } else
         return-1;   } else
     succ = -1;
+    return succ;   }
+
+int cpcss_init_http_response(pcpcss_http_req this, cpcss_res_code_t res, char *body)
+{   this->hcnt = 0;
+    this->hbuckets = 60;
+    this->headers = malloc(sizeof(char *) * this->hbuckets);
+    if(res >= 100 && res <= 599)
+        this->rru.res = res;
+    else
+        this->rru.res = 200;
+    int succ = 0;
+    if(this->headers != NULL)
+    {   for(char **it = this->headers; it != this->headers + this->hbuckets; ++it)
+            *it = NULL;
+        succ = -1;
+        this->body = body;   }
+    else
+        this->body = NULL;
     return succ;   }
 
 int cpcss_http____insens_strcmp(const char *x, const char *y)
@@ -132,6 +151,14 @@ int cpcss_http____req_meth_str(char *str, cpcss_req_method_t meth)
         	succ = -1;   }
     return succ;   }
 
+int cpcss_set_req_method(pcpcss_http_req this, cpcss_req_method_t meth)
+{   int succ = meth > CPCSS_CONNECT || meth < CPCSS_GET;
+    if(succ)
+        succ *= -1;
+    else
+        this->rru.req.meth = meth;
+    return succ;   }
+
 int cpcss_set_header(pcpcss_http_req this, const char *key, const char *val)
 {   if(this->headers != NULL)
     {   cpcss_http____check_resize(this);
@@ -210,8 +237,26 @@ size_t cpcss____reqsz(cpcpcss_http_req this)
 	cnt += 2;
     if(this->body != NULL)
         cnt += strlen(this->body);
-    return cnt;
-}
+    return cnt;   }
+
+void cpcss____req_str(char *str, cpcpcss_http_req this)
+{   size_t klen;
+    for(char **it = this->headers; it != this->headers + this->hbuckets; ++it)
+    {   if(*it != NULL)
+        {   klen = strlen(*it);
+            strcpy(str, *it);
+            str += klen;
+            strcpy(str, ": ");
+            str += 2;
+            strcpy(str, *it + klen + 1);
+            str += strlen(*it + klen + 1);
+            *str++ = '\r';
+            *str++ = '\n';   }   }
+    *str++ = '\r';
+    *str++ = '\n';
+    *str = '\0';
+    if(this->body != NULL)
+        strcpy(str, this->body);   }
 
 size_t cpcss_request_size(cpcpcss_http_req this)
 {   char reqmeth[12];
@@ -239,29 +284,23 @@ void cpcss_request_str(char *str, cpcpcss_http_req this)
     *strptr++ = ' ';
     strcpy(strptr, "HTTP/1.1\r\n");
     strptr += strlen(strptr);
-    size_t klen;
-    for(char **it = this->headers; it != this->headers + this->hbuckets; ++it)
-    {   if(*it != NULL)
-        {   klen = strlen(*it);
-            strcpy(strptr, *it);
-            strptr += klen;
-            strcpy(strptr, ": ");
-            strptr += 2;
-            strcpy(strptr, *it + klen + 1);
-            strptr += strlen(*it + klen + 1);
-            *strptr++ = '\r';
-            *strptr++ = '\n';   }   }
-    *strptr++ = '\r';
-    *strptr++ = '\n';
-    *strptr = '\0';
-    if(this->body != NULL)
-        strcpy(strptr, this->body);   }
+    cpcss____req_str(strptr, this);   }
 
 size_t cpcss_response_size(cpcpcss_http_req this)
 {   size_t cnt = 15 + cpcss____reqsz(this);
     return cnt;   }
 
-void cpcss_response_str(char *str, cpcpcss_http_req this);
+void cpcss_response_str(char *str, cpcpcss_http_req this)
+{   char *strptr = str;
+    strcpy(strptr, "HTTP/1.1 ");
+    strptr += 9;
+    cpcss_res_code_t res = this->rru.res;
+    *strptr++ = res / 100 + '0';
+    *strptr++ = res / 10 % 10 + '0';
+    *strptr++ = res % 10 + '0';
+    strcpy(strptr, " \r\n");
+    strptr += 3;
+    cpcss____req_str(strptr, this);   }
 
 void cpcss_free_request(pcpcss_http_req this)
 {   if(this->rru.req.requrl != NULL)

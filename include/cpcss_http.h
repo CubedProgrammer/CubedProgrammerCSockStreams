@@ -38,10 +38,23 @@ struct cpcss____http_request
 typedef struct cpcss____http_request cpcss_http_req, *pcpcss_http_req;
 typedef const struct cpcss____http_request *cpcpcss_http_req;
 
-// initializes an http request struct
+// initializes an http request
 // url must not have the leading http://
+// request method is GET by default
 // returns zero on success
 int cpcss_init_http_request(pcpcss_http_req this, const char *url, uint16_t port);
+
+// initializes an http response
+// body may be null, otherwise it must be a heap allocated and null-terminated string
+// response code of 200 is set in the case that the provided response code is invalid
+// returns zero on success
+int cpcss_init_http_response(pcpcss_http_req this, cpcss_res_code_t res, char *body);
+
+// sets the request method
+// if the request method is not one of the nine macros defined above
+// the request pointed to by this remains unchanged, -1 is returned
+// return zero on success
+int cpcss_set_req_method(pcpcss_http_req this, cpcss_req_method_t meth);
 
 // sets a header of the request
 // returns zero on success
