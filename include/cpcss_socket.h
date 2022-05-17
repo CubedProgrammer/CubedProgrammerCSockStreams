@@ -26,7 +26,10 @@ struct cpcss____cs;
 struct cpcss____ss* cpcss_open_server(const char *port);
 struct cpcss____ss* cpcss_accept_client(struct cpcss____ss *sv);
 struct cpcss____cs* cpcss_connect_client(const char *host,const char *port);
+
+// closing sockets
 int cpcss_close_server(struct cpcss____ss *sv);
+int cpcss_discon_client(struct cpcss____cs *cs);
 
 // typedefs for platforms
 #ifdef _WIN32

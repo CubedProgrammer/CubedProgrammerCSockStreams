@@ -127,11 +127,21 @@ struct cpcss____cs *cpcss_connect_client(const char *hn,const char *pt)
 int cpcss_close_server(struct cpcss____ss *sv)
 {cpcss____sh aso = sv->_m_cl;
 #ifdef _WIN32
-	return shutdown(aso);
+	return closesocket(aso);
 #else
     return close(aso);
 #endif
 }
+
+int cpcss_discon_client(struct cpcss____cs *cs)
+{cpcss____sh aso = cs->_m_sv;
+#ifdef _WIN32
+	return closesocket(aso);
+#else
+    return close(aso);
+#endif
+}
+
 // functions for getting members of structs
 cpcss____sh *cpcss_client_socket_get_server(struct cpcss____cs *c)
 {   return &c->_m_sv;   }

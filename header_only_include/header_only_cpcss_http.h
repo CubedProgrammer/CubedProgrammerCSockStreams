@@ -1,6 +1,11 @@
 #ifndef __cplusplus
 #ifndef Included_header_only_cpcss_http_h
 #define Included_header_only_cpcss_http_h
+#ifndef _WIN32
+#include<arpa/inet.h>
+#include<netdb.h>
+#include<sys/ioctl.h>
+#endif
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -223,8 +228,45 @@ const char *cpcss_get_header(cpcpcss_http_req this, const char *key)
     	val += strlen(val) + 1;
     return val;   }
 
-int cpcss_make_request(cpcpcss_http_req this, pcpcss_http_req res)
+int cpcss_make_request(cpcpcss_http_req this, cpcss_client_sock *cs, pcpcss_http_req res)
 {   int succ = 0;
+    size_t reqsz = cpcss_request_size(this);
+    char *reqdat = malloc(reqsz);
+    if(reqdat != NULL)
+    {   cpcss_request_str(reqdat, this);
+        struct addrinfo *addrls;
+        getaddrinfo(cpcss_get_header(this, "host"), NULL, NULL, &addrls);
+        char port[7];
+        sprintf(port, "%u", this->rru.req.port);
+        const char *ipstr;
+        struct sockaddr_in *addrin;
+        for(struct addrinfo *ainode = addrls; ainode != NULL; ainode = ainode->ai_next)
+        {   addrin = (struct sockaddr_in *)ainode->ai_addr;
+            ipstr = inet_ntoa(addrin->sin_addr);
+            *cs = cpcss_connect_client(ipstr, port);
+            if(*cs != NULL)
+                goto fini;   }
+        fini:
+        freeaddrinfo(addrls);
+		if(*cs != NULL)
+        {   cpcss____sh sock = *cpcss_client_socket_get_server(*cs);
+            if(send(sock, reqdat, reqsz, 0) < reqsz)
+            {
+                succ = CPCSS_REQ_CONNECTION_ERROR;
+			} else
+            {
+                int ressz;
+                succ = ioctl(sock, FIONREAD, &ressz);
+                if(succ != -1)
+                {   char *resdat = malloc(1 + ressz);
+                    if(resdat != NULL)
+                    {
+                        succ = read(sock, resdat, ressz);
+					} else
+                    succ = CPCSS_REQ_MEMORY_ERROR;   } else
+                succ = CPCSS_REQ_CONNECTION_ERROR;   }   } else
+        succ = CPCSS_REQ_CONNECTION_ERROR;   } else
+    succ = CPCSS_REQ_MEMORY_ERROR;
     return succ;   }
 
 size_t cpcss____reqsz(cpcpcss_http_req this)

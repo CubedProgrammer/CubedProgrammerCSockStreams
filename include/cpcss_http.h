@@ -2,7 +2,9 @@
 #ifndef Included_cpcss_http_h
 #define Included_cpcss_http_h
 #include<stdint.h>
+#include<cpcss_socket.h>
 
+// request methods
 #define CPCSS_GET 997
 #define CPCSS_PUT 998
 #define CPCSS_HEAD 999
@@ -12,6 +14,10 @@
 #define CPCSS_DELETE 1003
 #define CPCSS_OPTIONS 1004
 #define CPCSS_CONNECT 1005
+
+// request errors
+#define CPCSS_REQ_MEMORY_ERROR -97
+#define CPCSS_REQ_CONNECTION_ERROR -98
 
 typedef uint16_t cpcss_req_method_t;
 typedef uint16_t cpcss_res_code_t;
@@ -77,7 +83,7 @@ const char *cpcss_get_header(cpcpcss_http_req this, const char *key);
 // makes the request to an http server
 // res will be filled with the server's response
 // returns zero on success
-int cpcss_make_request(cpcpcss_http_req this, pcpcss_http_req res);
+int cpcss_make_request(cpcpcss_http_req this, cpcss_client_sock *cs, pcpcss_http_req res);
 
 // gets the size of the request in bytes if it were to be sent
 // allocate this size plus one for str of cpcss_request_str
