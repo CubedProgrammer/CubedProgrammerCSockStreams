@@ -5,7 +5,7 @@ CubedProgrammerCInputOutput library at https://github.com/CubedProgrammer/CubedP
 
 Make sure to add lib and header_only_include of CPCIO in the command as include paths.
 #### Opening a server
-```
+```c
 #include <cpcss_socket.h>
 #include <sockstream.h>
 int main(void)

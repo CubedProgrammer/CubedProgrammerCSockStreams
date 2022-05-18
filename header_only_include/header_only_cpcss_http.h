@@ -1,7 +1,9 @@
 #ifndef __cplusplus
 #ifndef Included_header_only_cpcss_http_h
 #define Included_header_only_cpcss_http_h
-#ifndef _WIN32
+#ifdef _WIN32
+#include<winsock.h>
+#else
 #include<arpa/inet.h>
 #include<netdb.h>
 #include<sys/ioctl.h>
@@ -251,17 +253,26 @@ int cpcss_make_request(cpcpcss_http_req this, cpcss_client_sock *cs, pcpcss_http
 		if(*cs != NULL)
         {   cpcss____sh sock = *cpcss_client_socket_get_server(*cs);
             if(send(sock, reqdat, reqsz, 0) < reqsz)
-            {
-                succ = CPCSS_REQ_CONNECTION_ERROR;
-			} else
+            {   succ = CPCSS_REQ_CONNECTION_ERROR;
+                cpcss_discon_client(*cs);   } else
             {
                 int ressz;
+#ifdef _WIN32
+                succ = ioctlsocket(sock, FIONREAD, &ressz);
+#else
                 succ = ioctl(sock, FIONREAD, &ressz);
+#endif
                 if(succ != -1)
                 {   char *resdat = malloc(1 + ressz);
                     if(resdat != NULL)
                     {
-                        succ = read(sock, resdat, ressz);
+                        succ
+#ifdef _WIN32
+                         = recv(sock, resdat, ressz, 0);
+#else
+                         = read(sock, resdat, ressz);
+#endif
+                        resdat[succ] = '\0';
 					} else
                     succ = CPCSS_REQ_MEMORY_ERROR;   } else
                 succ = CPCSS_REQ_CONNECTION_ERROR;   }   } else
@@ -343,6 +354,65 @@ void cpcss_response_str(char *str, cpcpcss_http_req this)
     strcpy(strptr, " \r\n");
     strptr += 3;
     cpcss____req_str(strptr, this);   }
+
+int cpcss____parse_http_req(const char *str, pcpcss_http_req res)
+{   int succ = 0;
+    const char *ptr;
+    size_t colon, crlf;
+    size_t kind, vind;
+    char kstr[2601], vstr[2601];
+    for(; succ == 0; str += crlf)
+    {   ptr = strstr(str, "\r\n");
+        if(ptr == NULL)
+            goto fail;
+        crlf = ptr - str;
+        if(crlf == 0)
+            goto next;
+        ptr = strchr(str, ':');
+        if(ptr == NULL)
+            goto fail;
+        colon = ptr - str;
+        if(colon > crlf)
+            goto fail;
+        if(*str == ' ')
+            goto fail;
+        kind = colon;
+        while(str[--kind] == ' ');
+        while(str[++colon] == ' ');
+        if(colon == crlf)
+            goto fail;
+        vind = crlf;
+        while(str[--vind] == ' ');
+        if(vind - colon + 1 < sizeof(vstr) && kind + 1 < sizeof(kstr))
+        {   strncpy(kstr, str, kind + 1);
+            strncpy(vstr, str + colon, vind - colon + 1);
+            kstr[kind + 1] = '\0';
+            vstr[vind - colon + 1] = '\0';
+            succ = cpcss_set_header(res, kstr, vstr);   } else
+        fail:succ = -1;   }
+    next:
+    return succ;   }
+
+int cpcss_parse_response(const char *str, pcpcss_http_req res)
+{   int succ = 0;
+    res->rru.res = 0;
+    const char *numstr = strchr(str, ' ');
+    if(numstr == NULL)
+        succ = -1;
+    else
+    {   ++numstr;
+        for(; *numstr != ' ' && res->rru.res < 600; ++numstr)
+        {   if(*numstr >= '0' && *numstr <= '9')
+            {   res->rru.res *= 10;
+                res->rru.res += *numstr - '0';   } else
+            res->rru.res = 700;   }
+        if(res->rru.res > 99 && res->rru.res < 600)
+        {   numstr = strchr(numstr, '\n');
+            if(numstr == NULL)
+                succ = -1; else
+            succ = cpcss____parse_http_req(numstr + 1, res);   } else
+        succ = -1;   }
+    return succ;   }
 
 void cpcss_free_request(pcpcss_http_req this)
 {   if(this->rru.req.requrl != NULL)

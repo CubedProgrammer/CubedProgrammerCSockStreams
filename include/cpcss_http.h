@@ -18,6 +18,7 @@
 // request errors
 #define CPCSS_REQ_MEMORY_ERROR -97
 #define CPCSS_REQ_CONNECTION_ERROR -98
+#define CPCSS_REQ_MESSAGE_ERROR -99
 
 typedef uint16_t cpcss_req_method_t;
 typedef uint16_t cpcss_res_code_t;
@@ -100,6 +101,10 @@ size_t cpcss_response_size(cpcpcss_http_req this);
 // writes response to a string
 // str must have the capacity to store the request
 void cpcss_response_str(char *str, cpcpcss_http_req this);
+
+// parses raw response
+// returns zero on success
+int cpcss_parse_response(const char *str, pcpcss_http_req res);
 
 // frees resources used by the request object
 // if the this pointer points to heap allocated memory, it needs to be freed separately
