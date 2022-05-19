@@ -262,7 +262,6 @@ int cpcss_make_request(cpcpcss_http_req this, cpcss_client_sock *cs, pcpcss_http
 #else
                 succ = ioctl(sock, FIONREAD, &ressz);
 #endif
-                printf("req res %zu %d\n", reqsz, ressz);
                 if(succ != -1)
                 {   char *resdat = malloc(1 + ressz);
                     if(resdat != NULL)
@@ -431,9 +430,12 @@ int cpcss_parse_response(const char *str, pcpcss_http_req res)
     return succ;   }
 
 void cpcss_free_request(pcpcss_http_req this)
-{   if(this->rru.req.requrl != NULL)
-        free(this->rru.req.requrl);
-	if(this->headers != NULL)
+{   cpcss_free_response(this);
+    if(this->rru.req.requrl != NULL)
+        free(this->rru.req.requrl);   }
+
+void cpcss_free_response(pcpcss_http_req this)
+{   if(this->headers != NULL)
 	{   for(char **it = this->headers; it != this->headers + this->hbuckets; ++it)
         {   if(*it != NULL)
                 free(*it);   }

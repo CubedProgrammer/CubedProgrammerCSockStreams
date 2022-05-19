@@ -113,5 +113,9 @@ int cpcss_parse_response(const char *str, pcpcss_http_req res);
 // if the this pointer points to heap allocated memory, it needs to be freed separately
 void cpcss_free_request(pcpcss_http_req this);
 
+// frees resources used by the response object
+// if the this pointer points to heap allocated memory, it needs to be freed separately
+void cpcss_free_response(pcpcss_http_req this);
+
 #endif
 #endif
