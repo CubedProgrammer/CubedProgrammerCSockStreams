@@ -84,6 +84,9 @@ const char *cpcss_get_header(cpcpcss_http_req this, const char *key);
 // makes the request to an http server
 // res will be filled with the server's response
 // returns zero on success
+// on error, returns either CPCSS_REQ_MESSAGE_ERROR, CPCSS_REQ_CONNECTION_ERROR, or CPCSS_REQ_MEMORY_ERROR
+// indicating either the response message was invalid, connection failed, or memory allocation failed
+// note invalid response message could also mean there isn't enough memory, but only for the response
 int cpcss_make_request(cpcpcss_http_req this, cpcss_client_sock *cs, pcpcss_http_req res);
 
 // gets the size of the request in bytes if it were to be sent
