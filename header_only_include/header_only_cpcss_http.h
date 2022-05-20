@@ -148,11 +148,11 @@ int cpcss_http____req_meth_str(char *str, cpcss_req_method_t meth)
         case CPCSS_DELETE:
             strcpy(str, "DELETE");
             break;
-        case CPCSS_OPTIONS:
-            strcpy(str, "OPTIONS");
-            break;
         case CPCSS_CONNECT:
             strcpy(str, "CONNECT");
+            break;
+        case CPCSS_OPTIONS:
+            strcpy(str, "OPTIONS");
             break;
         default:
         	succ = -1;   }
@@ -236,20 +236,27 @@ int cpcss_make_request(cpcpcss_http_req this, cpcss_client_sock *cs, pcpcss_http
     char *reqdat = malloc(reqsz);
     if(reqdat != NULL)
     {   cpcss_request_str(reqdat, this);
-        struct addrinfo *addrls;
-        getaddrinfo(cpcss_get_header(this, "host"), NULL, NULL, &addrls);
+        const char *host = cpcss_get_header(this, "host");
+        struct in_addr ia;
+        int valid = inet_aton(host, &ia);
         char port[7];
         sprintf(port, "%u", this->rru.req.port);
-        const char *ipstr;
-        struct sockaddr_in *addrin;
-        for(struct addrinfo *ainode = addrls; ainode != NULL; ainode = ainode->ai_next)
-        {   addrin = (struct sockaddr_in *)ainode->ai_addr;
-            ipstr = inet_ntoa(addrin->sin_addr);
-            *cs = cpcss_connect_client(ipstr, port);
-            if(*cs != NULL)
-                goto fini;   }
-        fini:
-        freeaddrinfo(addrls);
+        if(valid)
+		{   *cs = cpcss_connect_client(host, port);
+            if(*cs == NULL)
+            	succ = CPCSS_REQ_CONNECTION_ERROR;   } else
+        {   struct addrinfo *addrls;
+            getaddrinfo(host, NULL, NULL, &addrls);
+            const char *ipstr;
+            struct sockaddr_in *addrin;
+            for(struct addrinfo *ainode = addrls; ainode != NULL; ainode = ainode->ai_next)
+            {   addrin = (struct sockaddr_in *)ainode->ai_addr;
+                ipstr = inet_ntoa(addrin->sin_addr);
+                *cs = cpcss_connect_client(ipstr, port);
+                if(*cs != NULL)
+                    goto fini;   }
+            fini:
+            freeaddrinfo(addrls);   }
 		if(*cs != NULL)
         {   cpcss____sh sock = *cpcss_client_socket_get_server(*cs);
             if(send(sock, reqdat, reqsz, 0) < reqsz)
