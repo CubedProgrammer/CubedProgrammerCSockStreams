@@ -278,9 +278,28 @@ int cpcss_make_request(cpcpcss_http_req this, cpcss_client_sock *cs, pcpcss_http
 #else
                          = read(sock, resdat, ressz);
 #endif
-                        resdat[succ] = '\0';
-                        succ = cpcss_parse_response(resdat, res);
-                        free(resdat);
+                        ressz = succ;
+                        if(ressz == 0)
+                        {   ressz = 3700;
+                            resdat = malloc(1 + ressz);
+                            if(resdat != NULL)
+                            {   succ
+#ifdef _WIN32
+                                 = recv(sock, resdat, ressz, 0);
+#else
+                                 = read(sock, resdat, ressz);
+#endif
+                                 ressz = succ;
+                                 succ = 0;   } else
+                            succ = CPCSS_REQ_MEMORY_ERROR;   }
+                        if(succ == 0)
+                        {   resdat[ressz] = '\0';
+                            // this means header is longer than 3700 characters
+                            if(strstr(resdat, "\r\n\r\n") == NULL)
+                                succ = CPCSS_REQ_MEMORY_ERROR;
+                            else
+                                succ = cpcss_parse_response(resdat, res);
+                            free(resdat);   }
                         if(succ != 0)
                         succ = CPCSS_REQ_MESSAGE_ERROR;   } else
                     succ = CPCSS_REQ_MEMORY_ERROR;   } else
