@@ -19,6 +19,7 @@
 #define CPCSS_REQ_MEMORY_ERROR -97
 #define CPCSS_REQ_CONNECTION_ERROR -98
 #define CPCSS_REQ_MESSAGE_ERROR -99
+#define CPCSS_REQ_TIMEOUT_ERROR -100
 
 typedef uint16_t cpcss_req_method_t;
 typedef uint16_t cpcss_res_code_t;
@@ -88,6 +89,12 @@ const char *cpcss_get_header(cpcpcss_http_req this, const char *key);
 // indicating either the response message was invalid, connection failed, or memory allocation failed
 // note invalid response message could also mean there isn't enough memory, but only for the response
 int cpcss_make_request(cpcpcss_http_req this, cpcss_client_sock *cs, pcpcss_http_req res);
+
+// Send the request but do not wait for response
+int cpcss_send_request(cpcpcss_http_req this, cpcss_client_sock *cs);
+
+// Read the response of a request
+int cpcss_read_response(cpcpcss_http_req this, cpcss_client_sock *cs, pcpcss_http_req res);
 
 // gets the size of the request in bytes if it were to be sent
 // allocate this size plus one for str of cpcss_request_str

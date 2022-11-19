@@ -231,6 +231,24 @@ const char *cpcss_get_header(cpcpcss_http_req this, const char *key)
     return val;   }
 
 int cpcss_make_request(cpcpcss_http_req this, cpcss_client_sock *cs, pcpcss_http_req res)
+{   int ready, succ = cpcss_send_request(this, cs);
+    if(succ == 0)
+    {   fd_set fds, *fdsp = &fds;
+        struct timeval tv, *tvp = &tv;
+        tv.tv_sec = 15;
+        tv.tv_usec = 0;
+        cpcss____sh sock = *cpcss_client_socket_get_server(*cs);
+        FD_ZERO(fdsp);
+		FD_SET(sock, fdsp);
+        ready = select(sock + 1, fdsp, NULL, NULL, tvp);
+        if(ready == -1)
+            succ = -1;
+        else if(ready == 0)
+            succ = CPCSS_REQ_TIMEOUT_ERROR; else
+        succ = cpcss_read_response(this, cs, res);   }
+    return succ;   }
+
+int cpcss_send_request(cpcpcss_http_req this, cpcss_client_sock *cs)
 {   int succ = 0;
     size_t reqsz = cpcss_request_size(this);
     char *reqdat = malloc(reqsz);
@@ -261,52 +279,59 @@ int cpcss_make_request(cpcpcss_http_req this, cpcss_client_sock *cs, pcpcss_http
         {   cpcss____sh sock = *cpcss_client_socket_get_server(*cs);
             if(send(sock, reqdat, reqsz, 0) < reqsz)
             {   succ = CPCSS_REQ_CONNECTION_ERROR;
-                cpcss_discon_client(*cs);   } else
-            {
-                int ressz;
-#ifdef _WIN32
-                succ = ioctlsocket(sock, FIONREAD, &ressz);
-#else
-                succ = ioctl(sock, FIONREAD, &ressz);
-#endif
-                if(succ != -1)
-                {   char *resdat = malloc(1 + ressz);
-                    if(resdat != NULL)
-                    {   succ
-#ifdef _WIN32
-                         = recv(sock, resdat, ressz, 0);
-#else
-                         = read(sock, resdat, ressz);
-#endif
-                        ressz = succ;
-                        if(ressz == 0)
-                        {   ressz = 3700;
-                            resdat = malloc(1 + ressz);
-                            if(resdat != NULL)
-                            {   succ
-#ifdef _WIN32
-                                 = recv(sock, resdat, ressz, 0);
-#else
-                                 = read(sock, resdat, ressz);
-#endif
-                                 ressz = succ;
-                                 succ = 0;   } else
-                            succ = CPCSS_REQ_MEMORY_ERROR;   }
-                        if(succ == 0)
-                        {   resdat[ressz] = '\0';
-                            // this means header is longer than 3700 characters
-                            if(strstr(resdat, "\r\n\r\n") == NULL)
-                                succ = CPCSS_REQ_MEMORY_ERROR;
-                            else
-                                succ = cpcss_parse_response(resdat, res);
-                            free(resdat);   }
-                        if(succ != 0)
-                        succ = CPCSS_REQ_MESSAGE_ERROR;   } else
-                    succ = CPCSS_REQ_MEMORY_ERROR;   } else
-                succ = CPCSS_REQ_CONNECTION_ERROR;   }   } else
+                cpcss_discon_client(*cs);   }   } else
         succ = CPCSS_REQ_CONNECTION_ERROR; free(reqdat);   } else
     succ = CPCSS_REQ_MEMORY_ERROR;
     return succ;   }
+
+int cpcss_read_response(cpcpcss_http_req this, cpcss_client_sock *cs, pcpcss_http_req res)
+{
+    int ressz, succ = 0;
+    cpcss____sh sock = *cpcss_client_socket_get_server(*cs);
+#ifdef _WIN32
+    succ = ioctlsocket(sock, FIONREAD, &ressz);
+#else
+    succ = ioctl(sock, FIONREAD, &ressz);
+#endif
+    if(succ != -1)
+    {   char *resdat = malloc(1 + ressz);
+        if(resdat != NULL)
+        {   succ
+#ifdef _WIN32
+             = recv(sock, resdat, ressz, 0);
+#else
+             = read(sock, resdat, ressz);
+#endif
+            ressz = succ;
+            succ = 0;
+            if(ressz == 0)
+            {   ressz = 3700;
+                free(resdat);
+                resdat = malloc(1 + ressz);
+                if(resdat != NULL)
+                {   succ
+#ifdef _WIN32
+                     = recv(sock, resdat, ressz, 0);
+#else
+                     = read(sock, resdat, ressz);
+#endif
+                     ressz = succ;
+                     succ = 0;   } else
+                succ = CPCSS_REQ_MEMORY_ERROR;   }
+            if(succ == 0)
+            {   resdat[ressz] = '\0';
+                // this means header is longer than 3700 characters
+                if(strstr(resdat, "\r\n\r\n") == NULL)
+                    succ = CPCSS_REQ_MEMORY_ERROR;
+                else
+                    succ = cpcss_parse_response(resdat, res);
+                free(resdat);   }
+            if(succ != 0)
+            succ = CPCSS_REQ_MESSAGE_ERROR;   } else
+        succ = CPCSS_REQ_MEMORY_ERROR;   } else
+    succ = CPCSS_REQ_CONNECTION_ERROR;
+    return succ;
+}
 
 size_t cpcss____reqsz(cpcpcss_http_req this)
 {   size_t cnt = 0, klen;
