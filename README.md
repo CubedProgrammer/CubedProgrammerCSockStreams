@@ -4,6 +4,17 @@ C Socket Streams Library
 CubedProgrammerCInputOutput library at https://github.com/CubedProgrammer/CubedProgrammerCInputOutput
 
 Make sure to add lib and header_only_include of CPCIO in the command as include paths.
+## Sample compilation using clang
+Assuming CPCIO repository is in /usr/include/cpcio, which also contains libcpcio.so
+```sh
+clang -I/usr/include/cpcio/include -I/usr/include/cpcio/header_only_include -Iinclude -Iheader_only_include -O3 -c cpcss_socket.c cpcss_sockstream.c cpcss_http.c cpcss_multirequest.c -fPIC
+clang -shared -o libcpcss.so cpcss_socket.o cpcss_sockstream.o cpcss_http.o cpcss_multirequest.o -L /usr/include/cpcio -lcpcio
+```
+On POSIX compliant operating systems, there are directories for includes and shared libraries usually /usr/local/include or /usr/local/lib.
+Therefore, putting the headers and shared libraries in those directories is highly desirable.
+
+On Windows, there are no such directories, consider creating them yourselves and use shell scripts to help with compilation.
+Windows support is also limited and comes as a second thought, but pull requests are always welcome.
 #### Opening a server
 ```c
 #include <cpcss_socket.h>
@@ -16,6 +27,19 @@ int main(void)
     return 0;
 }
 ```
+
+#### Type cpcss_http_req
+Describes an http request or response.
+
+char *body is a string, representing the request or response body.
+
+char *requrl is the url to connect to.
+
+uint16_t rru.req.port is the port number.
+
+cpcss_req_meth_t rru.req.meth is an integer representing the request type, see cpcss_set_req_method.
+
+cpcss_res_code_t rru.res is an integer representing the response code.
 
 #### cpcss_open_server(port)
 Param port is a const string that is the port.
@@ -119,6 +143,18 @@ Returns zero on success
 On error, returns either CPCSS_REQ_MESSAGE_ERROR, CPCSS_REQ_CONNECTION_ERROR, or CPCSS_REQ_MEMORY_ERROR
 Indicating either the response message was invalid, connection failed, or memory allocation failed
 Note invalid response message could also mean there isn't enough memory, but only for the response
+#### cpcss_send_request(this, cs)
+Param this is a cpcpcss_http_req, the HTTP request to make.
+
+Param cs is a cpcss_client_sock, the socket to the server.
+
+Returns zero on success.
+#### cpcss_read_response(cs, res)
+Param cs is a cpcss_client_sock, the socket to the server.
+
+Param res is a pcpcss_http_req, the response received from a server.
+
+Returns zero on success.
 #### cpcss_request_size(this)
 Param this is a cpcpcss_http_req, an HTTP request.
 
@@ -153,9 +189,21 @@ Frees the memory used by req, if req is heap allocated, it'll have to be freed s
 Param res is a pcpcss_http_req.
 
 Frees the memory used by res, if res is heap allocated, it'll have to be freed separately.
+#### Type cpcss_mr_callback_t
+Callback type for multirequest.
 
+Pointer to function void(const char *url, cpcss_client_sock, cs, pcpcss_http_req res)
+#### cpcss_multirequest(cb, req, ...)
+Param cb is the callback function.
 
+Param req is the request to make, URL will be replaced with the URLs given.
 
+All other parameters are urls.
 
-
-
+The request can be initialized with any URL, since it will be replaced anyways.
+The callback will be called with the URL, the client socket, and the pointer to the response, for all successful connections.
+If the response was invalid, the callback will be called with the URL and two NULL pointers. 
+Do not free the response or free the pointer to the response.
+The calls to the callback will not necessarily be called with the URLs in the order they appear.
+However, the requests will be sent to the URLs in the order they appear.
+The last argument must be NULL.

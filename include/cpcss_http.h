@@ -94,7 +94,7 @@ int cpcss_make_request(cpcpcss_http_req this, cpcss_client_sock *cs, pcpcss_http
 int cpcss_send_request(cpcpcss_http_req this, cpcss_client_sock *cs);
 
 // Read the response of a request
-int cpcss_read_response(cpcpcss_http_req this, cpcss_client_sock *cs, pcpcss_http_req res);
+int cpcss_read_response(cpcss_client_sock *cs, pcpcss_http_req res);
 
 // gets the size of the request in bytes if it were to be sent
 // allocate this size plus one for str of cpcss_request_str

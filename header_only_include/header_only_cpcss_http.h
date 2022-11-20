@@ -6,6 +6,7 @@
 #else
 #include<arpa/inet.h>
 #include<netdb.h>
+#include<sys/select.h>
 #include<sys/ioctl.h>
 #endif
 #include<stdio.h>
@@ -245,7 +246,7 @@ int cpcss_make_request(cpcpcss_http_req this, cpcss_client_sock *cs, pcpcss_http
             succ = -1;
         else if(ready == 0)
             succ = CPCSS_REQ_TIMEOUT_ERROR; else
-        succ = cpcss_read_response(this, cs, res);   }
+        succ = cpcss_read_response(cs, res);   }
     return succ;   }
 
 int cpcss_send_request(cpcpcss_http_req this, cpcss_client_sock *cs)
@@ -284,7 +285,7 @@ int cpcss_send_request(cpcpcss_http_req this, cpcss_client_sock *cs)
     succ = CPCSS_REQ_MEMORY_ERROR;
     return succ;   }
 
-int cpcss_read_response(cpcpcss_http_req this, cpcss_client_sock *cs, pcpcss_http_req res)
+int cpcss_read_response(cpcss_client_sock *cs, pcpcss_http_req res)
 {
     int ressz, succ = 0;
     cpcss____sh sock = *cpcss_client_socket_get_server(*cs);
