@@ -9,7 +9,7 @@ struct cpcss_cs_url_pair
 {   cpcss_client_sock cs;
     const char *url;   };
 
-int cpcss_multirequest(cpcss_mr_callback_t cb, struct cpcss____http_request *req, ...)
+int cpcss_multirequest_timeout(cpcss_mr_callback_t cb, struct cpcss____http_request *req, int ms, ...)
 {   typedef const char *str_t;
 	struct cpcss____http_request res;
 	size_t len, cscnt, cscapa;
@@ -49,8 +49,8 @@ int cpcss_multirequest(cpcss_mr_callback_t cb, struct cpcss____http_request *req
         succ += cpcss_send_request(req, &csls[cscnt].cs) == 0;
         ++cscnt;   }
     va_end(urlls);
-    tv.tv_sec = 15;
-    tv.tv_usec = 0;
+    tv.tv_sec = ms / 1000;
+    tv.tv_usec = ms % 1000 * 1000;
     maxi = 0;
     FD_ZERO(fdsp);
     for(size_t i = 0; i < cscnt; ++i)
@@ -80,8 +80,8 @@ int cpcss_multirequest(cpcss_mr_callback_t cb, struct cpcss____http_request *req
                     cpcss_free_response(&res);
                     free(curr);   } else
                 FD_SET(sock, fdsp);   }
-            tv.tv_sec = 15;
-            tv.tv_usec = 0;   }   }
+            tv.tv_sec = ms / 1000;
+            tv.tv_usec = ms % 1000 * 1000;   }   }
     free(csls);
     return succ;   }
 
