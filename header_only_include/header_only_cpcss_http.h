@@ -61,6 +61,35 @@ int cpcss_init_http_response(pcpcss_http_req this, cpcss_res_code_t res, char *b
         this->body = NULL;
     return succ;   }
 
+int cpcss_http_cpy(pcpcss_http_req dest, cpcpcss_http_req src)
+{   int succ = 0;
+    dest->rru = src->rru;
+    dest->hbuckets = src->hbuckets;
+    dest->hcnt = src->hcnt;
+    size_t bodylen = strlen(src->body);
+    dest->body = malloc(bodylen + 1);
+    if(dest->body == NULL)
+        succ = -1;
+    else
+    {   strcpy(dest->body, src->body);
+        dest->headers = malloc(dest->hbuckets * sizeof(*dest->headers));
+        if(dest->headers == NULL)
+            succ = -1;
+        else
+        {   size_t klen, vlen;
+            for(size_t i = 0; i < dest->hbuckets; ++i)
+			{   if(src->headers[i] != NULL)
+                {   klen = strlen(src->headers[i]);
+                    vlen = strlen(src->headers[i] + klen + 1);
+                    dest->headers[i] = malloc(klen + vlen + 2);
+                    if(dest->headers[i] == NULL)
+                        succ = -1;
+                    else
+                        memcpy(dest->headers[i], src->headers[i], klen + vlen + 2);   }
+                else
+                    dest->headers[i] = NULL;   }   }   }
+    return succ;   }
+
 int cpcss_http____insens_strcmp(const char *x, const char *y)
 {   char chx, chy;
     int e = 1;

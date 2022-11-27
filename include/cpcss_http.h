@@ -58,6 +58,11 @@ int cpcss_init_http_request(pcpcss_http_req this, const char *url, uint16_t port
 // returns zero on success
 int cpcss_init_http_response(pcpcss_http_req this, cpcss_res_code_t res, char *body);
 
+// deep copies the src object to the dest, anything originally in dest will be overwritten
+// and thus, there will be a memory leak if dest was an existing unfreed request or response
+// returns zero on success
+int cpcss_http_cpy(pcpcss_http_req dest, cpcpcss_http_req src);
+
 // sets the request method
 // if the request method is not one of the nine macros defined above
 // the request pointed to by this remains unchanged, -1 is returned
