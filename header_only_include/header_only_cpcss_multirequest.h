@@ -25,6 +25,7 @@ int cpcss_parallel_thrd_func(void *arg)
         free(truearg->csurl.cs);   }
     cpcss_free_request(truearg->req);
     free(truearg->req);
+    free(truearg);
 	return 0;   }
 
 int cpcss_multirequest_timeout(cpcss_mr_callback_t cb, struct cpcss____http_request *req, int ms, ...)
@@ -103,42 +104,31 @@ int cpcss_multirequest_timeout(cpcss_mr_callback_t cb, struct cpcss____http_requ
     free(csls);
     return succ;   }
 
-int cpcss_multirequest_timeout_parallel(cpcss_mr_callback_t cb, struct cpcss____http_request *req, int ms, ...)
+int cpcss_multirequest_parallel(cpcss_mr_callback_t cb, struct cpcss____http_request *req, ...)
 {   typedef const char *str_t;
-	size_t cscnt, cscapa;
     va_list urlls;
     str_t url;
     thrd_t th;
     int succ = 0;
-    cscnt = 0;
-    cscapa = 10;
-    struct cpcss_parallel_mr_t *tmp, *csls = malloc(cscapa * sizeof(*csls));
-    va_start(urlls, ms);
+    struct cpcss_parallel_mr_t *tmp;
+    va_start(urlls, req);
     for(url = va_arg(urlls, str_t); url != NULL; url = va_arg(urlls, str_t))
-    {   if(cscnt == cscapa)
-        {   cscapa += cscapa >> 1;
-            tmp = malloc(cscapa * sizeof(*tmp));
-            memcpy(tmp, csls, cscnt * sizeof(struct cpcss_parallel_mr_t));
-            free(csls);
-            csls = tmp;   }
-        csls[cscnt].req = malloc(sizeof(*req));
-        if(csls[cscnt].req != NULL)
-        {   cpcss_http_cpy(csls[cscnt].req, req);
-            csls[cscnt].req->rru.req.requrl = malloc(strlen(url) + 1);
-            strcpy(csls[cscnt].req->rru.req.requrl, url);
-            char *slash = strchr(csls[cscnt].req->rru.req.requrl, '/');
+    {   tmp = malloc(sizeof(*tmp));
+        tmp->req = malloc(sizeof(*req));
+        if(tmp->req != NULL)
+        {   cpcss_http_cpy(tmp->req, req);
+            tmp->req->rru.req.requrl = malloc(strlen(url) + 1);
+            strcpy(tmp->req->rru.req.requrl, url);
+            char *slash = strchr(tmp->req->rru.req.requrl, '/');
             if(slash != NULL)
             {   *slash = '\0';
-                if(cpcss_set_header(csls[cscnt].req, "host", csls[cscnt].req->rru.req.requrl))
+                if(cpcss_set_header(tmp->req, "host", tmp->req->rru.req.requrl))
                     succ = -1; else
                 *slash = '/';   } else
-            succ = cpcss_set_header(csls[cscnt].req, "host", csls[cscnt].req->rru.req.requrl);   } else
+            succ = cpcss_set_header(tmp->req, "host", tmp->req->rru.req.requrl);   } else
         continue;
-        csls[cscnt].csurl.url = url;
-        csls[cscnt].cb = cb;
-        thrd_create(&th, cpcss_parallel_thrd_func, csls + cscnt);
-        thrd_detach(th);
-        ++cscnt;   }
+        thrd_create(&th, cpcss_parallel_thrd_func, tmp);
+        thrd_detach(th);   }
     va_end(urlls);
     return succ;   }
 

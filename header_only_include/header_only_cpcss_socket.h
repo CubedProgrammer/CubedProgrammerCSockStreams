@@ -113,7 +113,7 @@ struct cpcss____cs *cpcss_connect_client(const char *hn,const char *pt)
         {   struct cpcss____cs *csk = (struct cpcss____cs*)malloc(sizeof(struct cpcss____ss));
             csk->_m_sv = sv, csk->_m_ar = adp;
             return csk;   } else
-        return NULL;   } else
+        return(close(sv), NULL);   } else
 #endif
     return NULL;   }
 
