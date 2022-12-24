@@ -38,8 +38,8 @@ int cpcss_init_http_request(pcpcss_http_req this, const char *url, uint16_t port
                 if(cpcss_set_header(this, "host", this->rru.req.requrl))
                     succ = -1; else
                 *slash = '/';   } else
-            return cpcss_set_header(this, "host", "/");   } else
-        return-1;   } else
+            succ = cpcss_set_header(this, "host", this->rru.req.requrl);   } else
+        succ = -1;   } else
     succ = -1;
     return succ;   }
 
@@ -66,12 +66,19 @@ int cpcss_http_cpy(pcpcss_http_req dest, cpcpcss_http_req src)
     dest->rru = src->rru;
     dest->hbuckets = src->hbuckets;
     dest->hcnt = src->hcnt;
-    size_t bodylen = strlen(src->body);
-    dest->body = malloc(bodylen + 1);
-    if(dest->body == NULL)
+    size_t bodylen;
+    if(src->body != NULL)
+    {
+        bodylen = strlen(src->body);
+        dest->body = malloc(bodylen + 1);
+    }
+    else
+    	dest->body = NULL;
+    if(src->body != NULL && dest->body == NULL)
         succ = -1;
     else
-    {   strcpy(dest->body, src->body);
+    {   if(src->body != NULL)
+        strcpy(dest->body, src->body);
         dest->headers = malloc(dest->hbuckets * sizeof(*dest->headers));
         if(dest->headers == NULL)
             succ = -1;
@@ -478,15 +485,13 @@ int cpcss____parse_http_req(const char *str, pcpcss_http_req res)
         fail:succ = -1;   }
     next:
     if(succ == 0)
-    {
-        if(*str != '\0')
+    {   if(*str != '\0')
         {   size_t bodylen = strlen(str) + 1;
             res->body = malloc(bodylen);
             if(res->body == NULL)
                 succ = -1; else
             strcpy(res->body, str);   } else
-        res->body = NULL;
-	}
+        res->body = NULL;   }
     return succ;   }
 
 int cpcss_parse_response(const char *str, pcpcss_http_req res)
