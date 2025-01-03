@@ -20,6 +20,7 @@
 #define CPCSS_REQ_CONNECTION_ERROR -98
 #define CPCSS_REQ_MESSAGE_ERROR -99
 #define CPCSS_REQ_TIMEOUT_ERROR -100
+#define CPCSS_REQ_DOMAIN_ERROR -101
 
 typedef uint16_t cpcss_req_method_t;
 typedef uint16_t cpcss_res_code_t;

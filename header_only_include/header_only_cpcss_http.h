@@ -2,7 +2,7 @@
 #ifndef Included_header_only_cpcss_http_h
 #define Included_header_only_cpcss_http_h
 #ifdef _WIN32
-#include<winsock.h>
+//#include<winsock.h>
 #else
 #include<arpa/inet.h>
 #include<netdb.h>
@@ -301,23 +301,26 @@ int cpcss_send_request(cpcpcss_http_req this, cpcss_client_sock *cs)
             if(*cs == NULL)
             	succ = CPCSS_REQ_CONNECTION_ERROR;   } else
         {   struct addrinfo *addrls;
-            getaddrinfo(host, NULL, NULL, &addrls);
-            const char *ipstr;
-            struct sockaddr_in *addrin;
-            for(struct addrinfo *ainode = addrls; ainode != NULL; ainode = ainode->ai_next)
-            {   addrin = (struct sockaddr_in *)ainode->ai_addr;
-                ipstr = inet_ntoa(addrin->sin_addr);
-                *cs = cpcss_connect_client(ipstr, port);
-                if(*cs != NULL)
-                    goto fini;   }
-            fini:
-            freeaddrinfo(addrls);   }
+            int v = getaddrinfo(host, NULL, NULL, &addrls);
+            if(v == 0)
+            {
+                const char *ipstr;
+                struct sockaddr_in *addrin;
+                for(struct addrinfo *ainode = addrls; ainode != NULL; ainode = ainode->ai_next)
+                {   addrin = (struct sockaddr_in *)ainode->ai_addr;
+                    ipstr = inet_ntoa(addrin->sin_addr);
+                    *cs = cpcss_connect_client(ipstr, port);
+                    if(*cs != NULL)
+                        goto fini;   }
+                fini:
+                freeaddrinfo(addrls);   } else
+            succ = CPCSS_REQ_DOMAIN_ERROR;   }
 		if(*cs != NULL)
         {   cpcss____sh sock = *cpcss_client_socket_get_server(*cs);
             if(send(sock, reqdat, reqsz, 0) < reqsz)
             {   succ = CPCSS_REQ_CONNECTION_ERROR;
                 cpcss_discon_client(*cs);   }   } else
-        succ = CPCSS_REQ_CONNECTION_ERROR; free(reqdat);   } else
+        succ += (succ == 0) * CPCSS_REQ_CONNECTION_ERROR; free(reqdat);   } else
     succ = CPCSS_REQ_MEMORY_ERROR;
     return succ;   }
 

@@ -7,8 +7,8 @@
 
 #ifdef _WIN32
 
-#include <ws2tcpip.h>
 #include <winsock2.h>
+#include <ws2tcpip.h>
 
 #else
 
@@ -24,7 +24,7 @@ struct cpcss____cs;
 
 // functions for opening sockets
 struct cpcss____ss* cpcss_open_server(const char *port);
-struct cpcss____ss* cpcss_accept_client(struct cpcss____ss *sv);
+struct cpcss____cs* cpcss_accept_client(struct cpcss____ss *sv);
 struct cpcss____cs* cpcss_connect_client(const char *host,const char *port);
 
 // closing sockets
@@ -46,7 +46,7 @@ typedef struct sockaddr_in cpcss____sa;
 
 // functions for getting members of structs
 cpcss____sh *cpcss_client_socket_get_server(struct cpcss____cs *c);
-cpcss____sh *cpcss_server_socket_get_client(struct cpcss____ss *s);
+cpcss____sh *cpcss_server_socket_get_server(struct cpcss____ss *s);
 
 // typedefs
 typedef struct cpcss____ss* cpcss_server_sock;

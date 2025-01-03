@@ -10,13 +10,13 @@
 
 // open client streams
 struct cpcio____istream *open_client_istream(struct cpcss____ss *ss)
-{   cpcio_istream is = cpcio_open_istream(cpcss_server_socket_get_client(ss), &cpcss_read_ss, &cpcss_close_ss);
+{   cpcio_istream is = cpcio_open_istream(cpcss_server_socket_get_server(ss), &cpcss_read_ss, &cpcss_close_ss);
     is->ready = &cpcss_ready;
     cpcio_toggle_buf_is(is);
     return is;   }
 
 struct cpcio____ostream *open_client_ostream(struct cpcss____ss *ss)
-{   cpcio_ostream os = cpcio_open_ostream(cpcss_server_socket_get_client(ss), &cpcss_write_ss, &cpcss_close_ss);
+{   cpcio_ostream os = cpcio_open_ostream(cpcss_server_socket_get_server(ss), &cpcss_write_ss, &cpcss_close_ss);
     cpcio_toggle_buf_os(os);
     return os;   }
 

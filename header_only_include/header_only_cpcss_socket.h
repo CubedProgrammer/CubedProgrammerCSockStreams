@@ -15,14 +15,15 @@
 
 // structs for sockets
 struct cpcss____ss
-  {   cpcss____sh _m_sv, _m_cl; cpcss____sa *_m_ar;   };
+  {   cpcss____sh _m_sv; cpcss____sa _m_ar;   };
 
 struct cpcss____cs
-  {   cpcss____sh _m_sv; cpcss____sa *_m_ar;   };
+  {   cpcss____sh _m_sv; cpcss____sa _m_ar;   };
 
 // functions for opening sockets
 struct cpcss____ss* cpcss_open_server(const char *__pt)
-{   cpcss____sh ssk, csk;
+{
+    cpcss____sh ssk;
     cpcss____sa ah, *ahp;
 #ifdef _WIN32
     ZeroMemory(&ah, sizeof(ah));
@@ -36,12 +37,9 @@ struct cpcss____ss* cpcss_open_server(const char *__pt)
             if(ars == 0)
             {   ars = listen(ssk, SOMAXCONN);
                 if(ars == 0)
-                {   csk = accept(ssk, NULL, NULL);
-                    if(csk != INVALID_SOCKET)
-                    {   struct cpcss____ss *sv=(struct cpcss____ss*)malloc(sizeof(struct cpcss____ss));
-                        sv->_m_ar = ahp, sv->_m_sv = ssk, sv->_m_cl = csk;
-                        return sv;   } else
-                    return NULL;   } else
+                {   struct cpcss____ss* sv = malloc(sizeof(struct cpcss____ss));
+                    sv->_m_ar = ah, sv->_m_sv = ssk;
+                    return sv;   } else
                 return NULL;   } else
             return NULL;   } else
         return NULL;   } else
@@ -55,34 +53,29 @@ struct cpcss____ss* cpcss_open_server(const char *__pt)
         ah.sin_port = htons(atoi(__pt));
 
         if(bind(ssk, (struct sockaddr *)ahp, sizeof(ah)) >= 0 && listen(ssk, 3) >= 0)
-        {   socklen_t loas = sizeof(ahp);
-            csk = accept(ssk, (struct sockaddr *)ahp, &loas);
-
-            if(csk >= 0)
-            {   struct cpcss____ss *sv=(struct cpcss____ss*)malloc(sizeof(struct cpcss____ss));
-                sv->_m_ar = ahp, sv->_m_sv = ssk, sv->_m_cl = csk;
-                return sv;   } else
-            return NULL;   } else
+        {   struct cpcss____ss* sv = malloc(sizeof(struct cpcss____ss));
+            sv->_m_ar = ah, sv->_m_sv = ssk;
+            return sv;   } else
         return NULL;   } else
 #endif
     return NULL;   }
 
-struct cpcss____ss* cpcss_accept_client(struct cpcss____ss *sv)
+struct cpcss____cs* cpcss_accept_client(struct cpcss____ss *sv)
 {   cpcss____sh ssk = sv->_m_sv, csk;
 #ifdef _WIN32
     csk = accept(ssk, NULL, NULL);
     if(csk != INVALID_SOCKET)
-    {   struct cpcss____ss *nsv=(struct cpcss____ss*)malloc(sizeof(struct cpcss____ss));
-        nsv->_m_ar = sv->_m_ar, nsv->_m_sv = ssk, nsv->_m_cl = csk;
-        return nsv;   } else
+    {   struct cpcss____cs *cli=malloc(sizeof(struct cpcss____cs));
+        cli->_m_ar = sv->_m_ar, cli->_m_sv = csk;
+        return cli;   } else
 #else
     socklen_t loas = sizeof(sv->_m_ar);
-    csk = accept(ssk, (struct sockaddr *)sv->_m_ar, &loas);
+    csk = accept(ssk, (struct sockaddr *)&sv->_m_ar, &loas);
 
     if(csk >= 0)
-    {   struct cpcss____ss *nsv=(struct cpcss____ss*)malloc(sizeof(struct cpcss____ss));
-        nsv->_m_ar = sv->_m_ar, nsv->_m_sv = ssk, nsv->_m_cl = csk;
-        return nsv;   } else
+    {   struct cpcss____cs *cli=malloc(sizeof(struct cpcss____cs));
+        cli->_m_ar = sv->_m_ar, cli->_m_sv = csk;
+        return cli;   } else
 #endif
     return NULL;   }
 
@@ -100,7 +93,7 @@ struct cpcss____cs *cpcss_connect_client(const char *hn,const char *pt)
         {   int r = connect(sv, adp->ai_addr, adp->ai_addrlen);
             if(r == 0)
             {   struct cpcss____ss *csk = (struct cpcss____ss*)malloc(sizeof(struct cpcss____ss));
-                csk->_m_sv = sv, csk->_m_ar = adp;
+                csk->_m_sv = sv, csk->_m_ar = ad;
                 return csk;   } else
             {   closesocket(sv); return NULL;   }   } else
         return NULL;   } else
@@ -111,14 +104,14 @@ struct cpcss____cs *cpcss_connect_client(const char *hn,const char *pt)
         ad.sin_port=htons(atoi(pt));
         if(inet_pton(AF_INET, hn, &ad.sin_addr)>0 && connect(sv, (struct sockaddr *)&ad, sizeof(ad)) == 0)
         {   struct cpcss____cs *csk = (struct cpcss____cs*)malloc(sizeof(struct cpcss____ss));
-            csk->_m_sv = sv, csk->_m_ar = adp;
+            csk->_m_sv = sv, csk->_m_ar = ad;
             return csk;   } else
         return(close(sv), NULL);   } else
 #endif
     return NULL;   }
 
 int cpcss_close_server(struct cpcss____ss *sv)
-{   cpcss____sh aso = sv->_m_cl;
+{   cpcss____sh aso = sv->_m_sv;
 #ifdef _WIN32
 	return closesocket
 #else
@@ -138,8 +131,8 @@ int cpcss_discon_client(struct cpcss____cs *cs)
 // functions for getting members of structs
 cpcss____sh *cpcss_client_socket_get_server(struct cpcss____cs *c)
 {   return &c->_m_sv;   }
-cpcss____sh *cpcss_server_socket_get_client(struct cpcss____ss *s)
-{   return &s->_m_cl;   }
+cpcss____sh *cpcss_server_socket_get_server(struct cpcss____ss *s)
+{   return &s->_m_sv;   }
 
 #endif //Included_header_only_cpcss_socket_h
 #endif
