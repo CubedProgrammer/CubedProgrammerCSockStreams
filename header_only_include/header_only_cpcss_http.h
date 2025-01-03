@@ -294,10 +294,8 @@ int cpcss_send_request(cpcpcss_http_req this, cpcss_client_sock *cs)
         const char *host = cpcss_get_header(this, "host");
         struct in_addr ia;
         int valid = inet_aton(host, &ia);
-        char port[7];
-        sprintf(port, "%u", this->rru.req.port);
         if(valid)
-		{   *cs = cpcss_connect_client(host, port);
+		{   *cs = cpcss_connect_client(host, this->rru.req.port);
             if(*cs == NULL)
             	succ = CPCSS_REQ_CONNECTION_ERROR;   } else
         {   struct addrinfo *addrls;
@@ -309,7 +307,7 @@ int cpcss_send_request(cpcpcss_http_req this, cpcss_client_sock *cs)
                 for(struct addrinfo *ainode = addrls; ainode != NULL; ainode = ainode->ai_next)
                 {   addrin = (struct sockaddr_in *)ainode->ai_addr;
                     ipstr = inet_ntoa(addrin->sin_addr);
-                    *cs = cpcss_connect_client(ipstr, port);
+                    *cs = cpcss_connect_client(ipstr, this->rru.req.port);
                     if(*cs != NULL)
                         goto fini;   }
                 fini:

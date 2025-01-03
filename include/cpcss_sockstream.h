@@ -18,12 +18,12 @@ struct cpcss____o_sock_dest;
 // functions used by the streams
 
 // open client streams
-struct cpcio____istream *open_client_istream(struct cpcss____ss *ss);
-struct cpcio____ostream *open_client_ostream(struct cpcss____ss *ss);
+struct cpcio____istream *open_client_istream(struct cpcss_socket_impl *ss);
+struct cpcio____ostream *open_client_ostream(struct cpcss_socket_impl *ss);
 
 // open server streams
-struct cpcio____istream *open_server_istream(struct cpcss____cs *cs);
-struct cpcio____ostream *open_server_ostream(struct cpcss____cs *cs);
+struct cpcio____istream *open_server_istream(struct cpcss_socket_impl *cs);
+struct cpcio____ostream *open_server_ostream(struct cpcss_socket_impl *cs);
 
 // are there bytes that were sent but yet to be read
 int cpcss_ready(void *src);

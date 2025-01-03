@@ -2,6 +2,7 @@
 #ifndef Included_cpcss_socket_h
 #define Included_cpcss_socket_h
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -19,38 +20,39 @@
 
 // structs for sockets
 // server socket and client socket
-struct cpcss____ss;
-struct cpcss____cs;
-
+struct cpcss_socket_impl;
+// struct for transformed IO
+struct cpcss_transform_io;
+// transformed IO function typedefs
+typedef ssize_t(*cpcss_transform_read_t)(void*,void*,size_t);
+typedef ssize_t(*cpcss_transform_write_t)(void*,const void*,size_t);
 // functions for opening sockets
-struct cpcss____ss* cpcss_open_server(const char *port);
-struct cpcss____cs* cpcss_accept_client(struct cpcss____ss *sv);
-struct cpcss____cs* cpcss_connect_client(const char *host,const char *port);
+struct cpcss_socket_impl* cpcss_open_server(uint16_t port);
+struct cpcss_socket_impl* cpcss_open_server_ex(uint16_t port,int v6);
+struct cpcss_socket_impl* cpcss_accept_client(struct cpcss_socket_impl *sv);
+struct cpcss_socket_impl* cpcss_connect_client(const char *host,uint16_t port);
+struct cpcss_socket_impl* cpcss_connect_client_ex(const char *host,uint16_t port,int v6);
 
 // closing sockets
-int cpcss_close_server(struct cpcss____ss *sv);
-int cpcss_discon_client(struct cpcss____cs *cs);
+int cpcss_close_server(struct cpcss_socket_impl *sv);
+int cpcss_discon_client(struct cpcss_socket_impl *cs);
 
 // typedefs for platforms
 #ifdef _WIN32
-
 typedef SOCKET cpcss____sh;
-typedef struct addrinfo cpcss____sa;
-
 #else
-
 typedef int cpcss____sh;
+#endif
 typedef struct sockaddr_in cpcss____sa;
 
-#endif
-
 // functions for getting members of structs
-cpcss____sh *cpcss_client_socket_get_server(struct cpcss____cs *c);
-cpcss____sh *cpcss_server_socket_get_server(struct cpcss____ss *s);
+cpcss____sh *cpcss_client_socket_get_server(struct cpcss_socket_impl *c);
+cpcss____sh *cpcss_server_socket_get_server(struct cpcss_socket_impl *s);
 
 // typedefs
-typedef struct cpcss____ss* cpcss_server_sock;
-typedef struct cpcss____cs* cpcss_client_sock;
+typedef struct cpcss_socket_impl* cpcss_socket;
+typedef cpcss_socket cpcss_server_sock;
+typedef cpcss_socket cpcss_client_sock;
 
 #endif //Included_cpcss_socket_h
 #endif

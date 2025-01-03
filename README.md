@@ -42,7 +42,7 @@ cpcss_req_meth_t rru.req.meth is an integer representing the request type, see c
 cpcss_res_code_t rru.res is an integer representing the response code.
 
 #### cpcss_open_server(port)
-Param port is a const string that is the port.
+Param port is a `uint16_t` that is the port.
 
 Opens a server on a specified port, returns an object of type cpcss_server_sock or NULL if server couldn't be opened.
 
@@ -54,7 +54,7 @@ Accepts a client, returns the cpcss_client_sock.
 #### cpcss_connect_client(host,port)
 Param host is the host, obviously.
 
-Param port is a string, which is the port.
+Param port is a `uint16_t`, which is the port.
 
 Connects a client to a server.
 #### cpcss_close_server(sv)
