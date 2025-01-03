@@ -8,27 +8,33 @@
 
 #include <cpcss_sockstream.h>
 
-// open client streams
-struct cpcio____istream *open_client_istream(struct cpcss_socket_impl *ss)
-{   cpcio_istream is = cpcio_open_istream(cpcss_server_socket_get_server(ss), &cpcss_read_ss, &cpcss_close_ss);
-    is->ready = &cpcss_ready;
+struct cpcss_transform_io
+{   void*internal;
+    void(*init)(void*,struct cpcss_socket_impl*);
+    int(*read)(void*,char*,size_t);
+    int(*write)(void*,const char*,size_t);
+    int(*ready)(void*);
+    int(*cleanup)(void*);   };
+
+// open streams
+struct cpcio____istream *cpcss_open_istream(struct cpcss_socket_impl *ss)
+{   const struct cpcss_transform_io transformer = {cpcss_get_raw_socket(ss), &cpcss_noop_init, &cpcss_read_ss, &cpcss_write_ss, &cpcss_ready, &cpcss_close_ss};
+    return cpcss_open_istream_ex(ss, &transformer);   }
+
+struct cpcio____istream *cpcss_open_istream_ex(struct cpcss_socket_impl *ss,const struct cpcss_transform_io *trans)
+{   cpcio_istream is = cpcio_open_istream(trans->internal, trans->read, trans->cleanup);
+    is->ready = trans->ready;
+    trans->init(trans->internal, ss);
     cpcio_toggle_buf_is(is);
     return is;   }
 
-struct cpcio____ostream *open_client_ostream(struct cpcss_socket_impl *ss)
-{   cpcio_ostream os = cpcio_open_ostream(cpcss_server_socket_get_server(ss), &cpcss_write_ss, &cpcss_close_ss);
-    cpcio_toggle_buf_os(os);
-    return os;   }
+struct cpcio____ostream *cpcss_open_ostream(struct cpcss_socket_impl *ss)
+{   const struct cpcss_transform_io transformer = {cpcss_get_raw_socket(ss), &cpcss_noop_init, &cpcss_read_ss, &cpcss_write_ss, &cpcss_ready, &cpcss_close_ss};
+    return cpcss_open_ostream_ex(ss, &transformer);   }
 
-// open client streams
-struct cpcio____istream *open_server_istream(struct cpcss_socket_impl *cs)
-{   cpcio_istream is = cpcio_open_istream(cpcss_client_socket_get_server(cs), &cpcss_read_ss, &cpcss_close_ss);
-    is->ready = &cpcss_ready;
-    cpcio_toggle_buf_is(is);
-    return is;   }
-
-struct cpcio____ostream *open_server_ostream(struct cpcss_socket_impl *cs)
-{   cpcio_ostream os = cpcio_open_ostream(cpcss_client_socket_get_server(cs), &cpcss_write_ss, &cpcss_close_ss);
+struct cpcio____ostream *cpcss_open_ostream_ex(struct cpcss_socket_impl *ss,const struct cpcss_transform_io *trans)
+{   cpcio_ostream os = cpcio_open_ostream(trans->internal, trans->write, trans->cleanup);
+    trans->init(trans->internal, ss);
     cpcio_toggle_buf_os(os);
     return os;   }
 

@@ -21,14 +21,9 @@
 // structs for sockets
 // server socket and client socket
 struct cpcss_socket_impl;
-// struct for transformed IO
-struct cpcss_transform_io;
-// transformed IO function typedefs
-typedef ssize_t(*cpcss_transform_read_t)(void*,void*,size_t);
-typedef ssize_t(*cpcss_transform_write_t)(void*,const void*,size_t);
 // functions for opening sockets
-struct cpcss_socket_impl* cpcss_open_server(uint16_t port);
 struct cpcss_socket_impl* cpcss_open_server_ex(uint16_t port,int v6);
+struct cpcss_socket_impl* cpcss_open_server(uint16_t port);
 struct cpcss_socket_impl* cpcss_accept_client(struct cpcss_socket_impl *sv);
 struct cpcss_socket_impl* cpcss_connect_client(const char *host,uint16_t port);
 struct cpcss_socket_impl* cpcss_connect_client_ex(const char *host,uint16_t port,int v6);
@@ -46,6 +41,7 @@ typedef int cpcss____sh;
 typedef struct sockaddr_in cpcss____sa;
 
 // functions for getting members of structs
+cpcss____sh *cpcss_get_raw_socket(struct cpcss_socket_impl *socket);
 cpcss____sh *cpcss_client_socket_get_server(struct cpcss_socket_impl *c);
 cpcss____sh *cpcss_server_socket_get_server(struct cpcss_socket_impl *s);
 

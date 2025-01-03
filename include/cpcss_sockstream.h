@@ -11,22 +11,22 @@
 #endif
 #include <cpcss_socket.h>
 
-// structs used by the streams
-struct cpcss____i_sock_src;
-struct cpcss____o_sock_dest;
+// struct for transformed IO
+struct cpcss_transform_io;
 
-// functions used by the streams
+// open streams
+struct cpcio____istream *cpcss_open_istream(struct cpcss_socket_impl *ss);
+struct cpcio____istream *cpcss_open_istream_ex(struct cpcss_socket_impl *ss,const struct cpcss_transform_io *trans);
 
-// open client streams
-struct cpcio____istream *open_client_istream(struct cpcss_socket_impl *ss);
-struct cpcio____ostream *open_client_ostream(struct cpcss_socket_impl *ss);
-
-// open server streams
-struct cpcio____istream *open_server_istream(struct cpcss_socket_impl *cs);
-struct cpcio____ostream *open_server_ostream(struct cpcss_socket_impl *cs);
+struct cpcio____ostream *cpcss_open_ostream(struct cpcss_socket_impl *ss);
+struct cpcio____ostream *cpcss_open_ostream_ex(struct cpcss_socket_impl *ss,const struct cpcss_transform_io *trans);
 
 // are there bytes that were sent but yet to be read
 int cpcss_ready(void *src);
+
+// no-op init function
+static inline void cpcss_noop_init(void*,struct cpcss_socket_impl*)
+{}
 
 // reader
 int cpcss_read_ss(void *src,

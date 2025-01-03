@@ -89,6 +89,8 @@ int cpcss_discon_client(struct cpcss_socket_impl *cs)
 #endif
     (aso);   }
 
+cpcss____sh *cpcss_get_raw_socket(struct cpcss_socket_impl *socket)
+{   return&socket->_m_sv;   }
 // functions for getting members of structs
 cpcss____sh *cpcss_client_socket_get_server(struct cpcss_socket_impl *c)
 {   return &c->_m_sv;   }
