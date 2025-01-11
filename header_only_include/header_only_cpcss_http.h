@@ -9,6 +9,7 @@
 #include<sys/select.h>
 #include<sys/ioctl.h>
 #endif
+#include<ctype.h>
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -16,6 +17,7 @@
 #define P_CONST_A 375651977
 #define P_CONST_B 149753843
 #define P_CONST_C 987662329
+#define PARSE_CHUNK_LENGTH 32768
 
 int cpcss_init_http_request(pcpcss_http_req this, const char *url, uint16_t port)
 {   size_t len = strlen(url);
@@ -282,7 +284,7 @@ int cpcss_make_request(cpcpcss_http_req this, cpcss_client_sock *cs, pcpcss_http
             succ = -1;
         else if(ready == 0)
             succ = CPCSS_REQ_TIMEOUT_ERROR; else
-        succ = cpcss_read_response(cs, res);   }
+        succ = cpcss_read_response(NULL, res);   }
     return succ;   }
 
 int cpcss_send_request(cpcpcss_http_req this, cpcss_client_sock *cs)
@@ -322,50 +324,13 @@ int cpcss_send_request(cpcpcss_http_req this, cpcss_client_sock *cs)
     succ = CPCSS_REQ_MEMORY_ERROR;
     return succ;   }
 
-int cpcss_read_response(cpcss_client_sock *cs, pcpcss_http_req res)
-{
-    int ressz, succ = 0;
-    cpcss____sh sock = *cpcss_client_socket_get_server(*cs);
-#ifdef _WIN32
-    succ = ioctlsocket(sock, FIONREAD, &ressz);
-#else
-    succ = ioctl(sock, FIONREAD, &ressz);
-#endif
-    if(succ != -1)
-    {   char *resdat = malloc(1 + ressz);
-        if(resdat != NULL)
-        {   succ
-#ifdef _WIN32
-             = recv(sock, resdat, ressz, 0);
-#else
-             = read(sock, resdat, ressz);
-#endif
-            ressz = succ;
-            succ = 0;
-            if(ressz == 0)
-            {   ressz = 3700;
-                free(resdat);
-                resdat = malloc(1 + ressz);
-                if(resdat != NULL)
-                {   succ
-#ifdef _WIN32
-                     = recv(sock, resdat, ressz, 0);
-#else
-                     = read(sock, resdat, ressz);
-#endif
-                     ressz = succ;
-                     succ = 0;   } else
-                succ = CPCSS_REQ_MEMORY_ERROR;   }
-            if(succ == 0)
-            {   resdat[ressz] = '\0';
-                // this means header is longer than 3700 characters
-                if(strstr(resdat, "\r\n\r\n") == NULL)
-                    succ = CPCSS_REQ_MEMORY_ERROR;
-                else
-                    succ = cpcss_parse_response(resdat, res);
-                free(resdat);   }
-            if(succ != 0)
-            succ = CPCSS_REQ_MESSAGE_ERROR;   } else
+int cpcss_read_response(cpcio_istream is, pcpcss_http_req res)
+{   struct cpcss_partial_parse_data parser;
+    int succ = cpcss_init_partial_parser(&parser, 32768);
+    if(succ == 0)
+    {   char resdat[16384];
+        for(unsigned bytes = cpcio_rd(is, resdat, sizeof resdat); cpcio_istream_ready(is); bytes = cpcio_rd(is, resdat, sizeof resdat))
+            cpcss_partial_parse_header(&parser, resdat, bytes, res);
         succ = CPCSS_REQ_MEMORY_ERROR;   } else
     succ = CPCSS_REQ_CONNECTION_ERROR;
     return succ;
@@ -446,6 +411,109 @@ void cpcss_response_str(char *str, cpcpcss_http_req this)
     strptr += 3;
     cpcss____req_str(strptr, this);   }
 
+int cpcss_init_partial_parser(struct cpcss_partial_parse_data *dat, unsigned field_limit)
+{   dat->cnt = 0;
+    dat->field_size_limit = field_limit;
+    dat->isvalue = 0;
+    dat->ignore = 0;
+    dat->last_linefeed = 0;
+    dat->body = 0;
+    return(dat->dat = malloc(dat->field_size_limit + 1)) == NULL;   }
+
+void cpcss_free_partial_parser(struct cpcss_partial_parse_data *dat)
+{   free(dat->dat);   }
+
+void cpcss_partial_copy(struct cpcss_partial_parse_data *dat, char tocopy, const char *first, const char *last, pcpcss_http_req out)
+{   size_t copycnt = last - first;
+    if(dat->cnt + copycnt < dat->field_size_limit)
+    {   memcpy(dat->dat + dat->cnt, first, copycnt);
+        if(tocopy >> 1 == 1)
+            dat->dat[copycnt + dat->cnt] = '\0';
+        dat->cnt += copycnt + (tocopy >> 1);   } else
+    {   dat->ignore = 1;
+        dat->isvalue = 1;   }
+    if(tocopy == 3 && !dat->ignore)
+    {   char *key = dat->dat;
+        char *val = dat->dat;
+        for(; *val != '\0'; ++val);
+        for(++val; val != dat->dat + dat->cnt && isspace(*val); ++val);
+        for(--dat->cnt; dat->dat[dat->cnt] != '\0' && isspace(dat->dat[dat->cnt]); --dat->cnt);
+        dat->dat[++dat->cnt] = '\0';
+        printf("key is %s, val is %s\n", key, val);
+        cpcss_set_header(out, key, val);
+        dat->cnt = 0;   }   }
+
+void cpcss_partial_parse_header(struct cpcss_partial_parse_data *dat, const char *ptr, unsigned len, pcpcss_http_req out)
+{
+    static const char searchchars[] = ":\r";
+    const char *cpbegin = ptr, *cpend = ptr;
+    const char*old, *end = ptr + len;
+    char tofind;
+    size_t copycnt;
+    char tocopy = 0;
+    if(!dat->body)
+    {
+        if(dat->last_linefeed)
+        {
+            if(dat->last_linefeed == 3)
+            {   dat->body = ptr[0] == '\n';
+                dat->isvalue = !dat->body;
+                dat->last_linefeed = 0;   }
+            else if(len + dat->last_linefeed >= 2)
+            {   const char *checkptr = ptr + (2 - dat->last_linefeed);
+                if(isspace(*checkptr))
+                {   if(*checkptr == '\r')
+                    {   if(checkptr + 1 == end)
+                            dat->last_linefeed = 3; else
+                        dat->body = checkptr[1] == '\n';   } else
+                    {   len -= checkptr - ptr + 1;
+                        ptr = checkptr + 1;   }   } else
+                {   dat->last_linefeed = 0;
+                    dat->isvalue = 0;   }   } else
+            dat->last_linefeed += len;
+        }
+    }
+    if(!dat->body)
+    {
+        for(const char*separator = ptr; separator != end; separator += (separator != end) * (2 - dat->isvalue))
+        {
+            tofind = searchchars[dat->isvalue];
+            separator = memchr(old = separator, tofind, end - separator);
+            separator = separator == NULL ? end : separator;
+            if(dat->isvalue)
+            {
+                if(separator == end)
+                {   if(!dat->ignore)
+                        tocopy = 1;   } else if(end - separator <= 3)
+                {   dat->last_linefeed = end - separator;
+                    if(end - separator == 3)
+                    {   dat->last_linefeed *= separator[2] == '\r';
+                        dat->isvalue = isspace(separator[2]) != 0;   }
+                    if(!dat->ignore)
+                        tocopy = 1;   } else if(separator[2] == '\r' && separator[3] == '\n')
+                {   dat->body = 1;
+                    cpbegin = old;
+                    cpend = separator;
+                    separator = end;   } else if(!isspace(separator[2]))
+                {   if(!dat->ignore)
+                        tocopy = 3;
+                    dat->isvalue = 0;
+                    dat->ignore = 0;   }
+            }
+            else
+            {   dat->isvalue = separator != end;
+                cpbegin = old;
+                cpend = separator;
+                tocopy = dat->isvalue + 1;   }
+            if(tocopy)
+            {   cpcss_partial_copy(dat, tocopy, cpbegin, cpend, out);
+                tocopy = 0;   }
+        }
+    }
+    if(dat->body)
+        cpcss_partial_copy(dat, 3, cpbegin, cpend, out);
+}
+
 int cpcss____parse_http_req(const char *str, pcpcss_http_req res)
 {   int succ = 0;
     const char *ptr;
@@ -494,6 +562,34 @@ int cpcss____parse_http_req(const char *str, pcpcss_http_req res)
             strcpy(res->body, str);   } else
         res->body = NULL;   }
     return succ;   }
+
+int cpcss_parse_http_stream(cpcio_istream in, pcpcss_http_req out)
+{   struct cpcss_partial_parse_data parser;
+    int succ = cpcss_init_partial_parser(&parser, 32768);
+    if(succ == 0)
+    {   unsigned bytes = CPCIO____BUFSZ;
+        char keep = 1;
+        while(keep)
+        {   while(in->bufs < bytes && keep)
+            {   cpcio_getc_is(in);
+                keep = memcmp(in->cbuf + in->bufs - 4, "\r\n\r\n", 4) != 0;   }
+            cpcss_partial_parse_header(&parser, in->cbuf, in->bufs, out);   }   }
+    return succ;   }
+
+int cpcss_parse_http_string(const char *str, pcpcss_http_req out)
+{
+    struct cpcss_partial_parse_data parser;
+    int succ = cpcss_init_partial_parser(&parser, 32768);
+    if(succ == 0)
+    {   const char *strend = str + strlen(str);
+        const unsigned bytes = 16384;
+        for(; str + bytes < strend; str += bytes)
+            cpcss_partial_parse_header(&parser, str, bytes, out);
+        cpcss_partial_parse_header(&parser, str, strend - str, out);
+        cpcss_free_partial_parser(&parser);   } else
+    succ = CPCSS_REQ_MEMORY_ERROR;
+    return succ;
+}
 
 int cpcss_parse_response(const char *str, pcpcss_http_req res)
 {   int succ = 0;

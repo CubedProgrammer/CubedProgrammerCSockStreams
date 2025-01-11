@@ -12,7 +12,13 @@
 #include <cpcss_socket.h>
 
 // struct for transformed IO
-struct cpcss_transform_io;
+struct cpcss_transform_io
+{   void*internal;
+    void(*init)(void*,struct cpcss_socket_impl*);
+    int(*read)(void*,char*,size_t);
+    int(*write)(void*,const char*,size_t);
+    int(*ready)(void*);
+    int(*cleanup)(void*);   };
 
 // open streams
 struct cpcio____istream *cpcss_open_istream(struct cpcss_socket_impl *ss);

@@ -2,6 +2,7 @@
 #ifndef Included_cpcss_http_h
 #define Included_cpcss_http_h
 #include<stdint.h>
+#include<cpcio_istream.h>
 #include<cpcss_socket.h>
 
 // request methods
@@ -24,6 +25,17 @@
 
 typedef uint16_t cpcss_req_method_t;
 typedef uint16_t cpcss_res_code_t;
+
+struct cpcss_partial_parse_data
+{
+    char*dat;
+    unsigned field_size_limit;
+    unsigned cnt;
+    char isvalue;
+    char ignore;
+    char last_linefeed;
+    char body;
+};
 
 // struct for request information
 struct cpcss____http_request_info
@@ -100,7 +112,7 @@ int cpcss_make_request(cpcpcss_http_req this, cpcss_client_sock *cs, pcpcss_http
 int cpcss_send_request(cpcpcss_http_req this, cpcss_client_sock *cs);
 
 // Read the response of a request
-int cpcss_read_response(cpcss_client_sock *cs, pcpcss_http_req res);
+int cpcss_read_response(cpcio_istream is, pcpcss_http_req res);
 
 // gets the size of the request in bytes if it were to be sent
 // allocate this size plus one for str of cpcss_request_str
@@ -117,6 +129,17 @@ size_t cpcss_response_size(cpcpcss_http_req this);
 // writes response to a string
 // str must have the capacity to store the request
 void cpcss_response_str(char *str, cpcpcss_http_req this);
+
+// initializes the partial parser with a maximum header field length
+// returns 0 on success
+int cpcss_init_partial_parser(struct cpcss_partial_parse_data *dat, unsigned field_limit);
+
+// parse a part of the request or response
+// the partial parse data struct must be initialized
+void cpcss_partial_parse_header(struct cpcss_partial_parse_data *dat, const char *ptr, unsigned len, pcpcss_http_req out);
+
+int cpcss_parse_http_stream(cpcio_istream in, pcpcss_http_req out);
+int cpcss_parse_http_string(const char *str, pcpcss_http_req out);
 
 // parses raw response
 // returns zero on success

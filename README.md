@@ -18,12 +18,12 @@ Windows support is also limited and comes as a second thought, but pull requests
 #### Opening a server
 ```c
 #include <cpcss_socket.h>
-#include <sockstream.h>
+#include <cpcss_sockstream.h>
 int main(void)
 {
-    cpcss_server_sock sock = cpcss_open_server("7777");// opens a server on port 7777 and accepts a client
-    istream *is = open_client_istream(sock);// opens an istream to the client
-    ostream *os = open_client_ostream(sock);// opens an ostream to the client
+    cpcss_server_sock sock = cpcss_open_server(7777);// opens a server on port 7777 and accepts a client
+    cpcss_istream *is = cpcss_open_istream(sock);// opens an istream to the client
+    cpcss_ostream *os = cpcss_open_ostream(sock);// opens an ostream to the client
     return 0;
 }
 ```

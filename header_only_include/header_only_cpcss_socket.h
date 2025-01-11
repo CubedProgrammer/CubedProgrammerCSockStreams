@@ -2,6 +2,7 @@
 #ifndef Included_header_only_cpcss_socket_h
 #define Included_header_only_cpcss_socket_h
 
+#include<string.h>
 #include<cpcss_socket.h>
 #ifndef _WIN32
 #include <arpa/inet.h>
@@ -88,6 +89,13 @@ int cpcss_discon_client(struct cpcss_socket_impl *cs)
     return close
 #endif
     (aso);   }
+
+unsigned cpcss_address_n(struct cpcss_socket_impl *socket)
+{   return htonl(socket->_m_ar.sin_addr.s_addr);   }
+
+void cpcss_address_s(struct cpcss_socket_impl *socket, char *buf)
+{   char *str = inet_ntoa(socket->_m_ar.sin_addr);
+    strcpy(buf, str);   }
 
 cpcss____sh *cpcss_get_raw_socket(struct cpcss_socket_impl *socket)
 {   return&socket->_m_sv;   }

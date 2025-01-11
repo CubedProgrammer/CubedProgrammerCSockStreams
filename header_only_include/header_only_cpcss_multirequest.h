@@ -4,6 +4,7 @@
 #include<stdarg.h>
 #include<sys/select.h>
 #include<threads.h>
+#include<cpcss_sockstream.h>
 #include<cpcss_multirequest.h>
 
 struct cpcss_cs_url_pair
@@ -38,6 +39,7 @@ int cpcss_multirequest_timeout(cpcss_mr_callback_t cb, struct cpcss____http_requ
     int maxi, succ = 0;
     va_list urlls;
     cpcss_client_sock curr;
+    cpcio_istream is;
     str_t url;
     cscnt = 0;
     cscapa = 10;
@@ -92,7 +94,8 @@ int cpcss_multirequest_timeout(cpcss_mr_callback_t cb, struct cpcss____http_requ
                     url = csls[j].url;
                     csls[j].cs = NULL;
                     --i;
-                    if(cpcss_read_response(&curr, &res) != 0)
+                    is = cpcss_open_istream(curr);
+                    if(cpcss_read_response(is, &res) != 0)
                     {   --succ;
                         cb(url, NULL, NULL);   } else
                     cb(url, curr, &res);

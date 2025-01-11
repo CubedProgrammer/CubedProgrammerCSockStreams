@@ -8,14 +8,6 @@
 
 #include <cpcss_sockstream.h>
 
-struct cpcss_transform_io
-{   void*internal;
-    void(*init)(void*,struct cpcss_socket_impl*);
-    int(*read)(void*,char*,size_t);
-    int(*write)(void*,const char*,size_t);
-    int(*ready)(void*);
-    int(*cleanup)(void*);   };
-
 // open streams
 struct cpcio____istream *cpcss_open_istream(struct cpcss_socket_impl *ss)
 {   const struct cpcss_transform_io transformer = {cpcss_get_raw_socket(ss), &cpcss_noop_init, &cpcss_read_ss, &cpcss_write_ss, &cpcss_ready, &cpcss_close_ss};
