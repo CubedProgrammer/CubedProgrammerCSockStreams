@@ -138,12 +138,18 @@ int cpcss_init_partial_parser(struct cpcss_partial_parse_data *dat, unsigned fie
 // the partial parse data struct must be initialized
 void cpcss_partial_parse_header(struct cpcss_partial_parse_data *dat, const char *ptr, unsigned len, pcpcss_http_req out);
 
+// parses the headers from a stream
+// the body is not parsed, the last four bytes read will be CR LF CR LF
 int cpcss_parse_http_stream(cpcio_istream in, pcpcss_http_req out);
+
+// parses the headers from a null-terminated string
+// the string MUST only contain the header and not the body
+// specifically, the last four characters must be CR LF CR LF
 int cpcss_parse_http_string(const char *str, pcpcss_http_req out);
 
 // parses raw response
 // returns zero on success
-int cpcss_parse_response(const char *str, pcpcss_http_req res);
+int cpcss_parse_response(cpcio_istream is, pcpcss_http_req res);
 
 // frees resources used by the request object
 // if the this pointer points to heap allocated memory, it needs to be freed separately

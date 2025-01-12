@@ -439,7 +439,6 @@ void cpcss_partial_copy(struct cpcss_partial_parse_data *dat, char tocopy, const
         for(++val; val != dat->dat + dat->cnt && isspace(*val); ++val);
         for(--dat->cnt; dat->dat[dat->cnt] != '\0' && isspace(dat->dat[dat->cnt]); --dat->cnt);
         dat->dat[++dat->cnt] = '\0';
-        printf("key is %s, val is %s\n", key, val);
         cpcss_set_header(out, key, val);
         dat->cnt = 0;   }   }
 
@@ -514,66 +513,20 @@ void cpcss_partial_parse_header(struct cpcss_partial_parse_data *dat, const char
         cpcss_partial_copy(dat, 3, cpbegin, cpend, out);
 }
 
-int cpcss____parse_http_req(const char *str, pcpcss_http_req res)
-{   int succ = 0;
-    const char *ptr;
-    size_t colon, crlf;
-    size_t kind, vind;
-    char kstr[2601], vstr[2601];
-    for(; succ == 0; str += crlf + 2)
-    {   ptr = strstr(str, "\r\n");
-        if(ptr == NULL)
-            goto fail;
-        crlf = ptr - str;
-        if(crlf == 0)
-        {
-            str += 2;
-            goto next;
-		}
-        ptr = strchr(str, ':');
-        if(ptr == NULL)
-            goto fail;
-        colon = ptr - str;
-        if(colon > crlf)
-            goto fail;
-        if(*str == ' ')
-            goto fail;
-        kind = colon;
-        while(str[--kind] == ' ');
-        while(str[++colon] == ' ');
-        if(colon == crlf)
-            goto fail;
-        vind = crlf;
-        while(str[--vind] == ' ');
-        if(vind - colon + 1 < sizeof(vstr) && kind + 1 < sizeof(kstr))
-        {   strncpy(kstr, str, kind + 1);
-            strncpy(vstr, str + colon, vind - colon + 1);
-            kstr[kind + 1] = '\0';
-            vstr[vind - colon + 1] = '\0';
-            succ = cpcss_set_header(res, kstr, vstr);   } else
-        fail:succ = -1;   }
-    next:
-    if(succ == 0)
-    {   if(*str != '\0')
-        {   size_t bodylen = strlen(str) + 1;
-            res->body = malloc(bodylen);
-            if(res->body == NULL)
-                succ = -1; else
-            strcpy(res->body, str);   } else
-        res->body = NULL;   }
-    return succ;   }
-
 int cpcss_parse_http_stream(cpcio_istream in, pcpcss_http_req out)
 {   struct cpcss_partial_parse_data parser;
     int succ = cpcss_init_partial_parser(&parser, 32768);
     if(succ == 0)
     {   unsigned bytes = CPCIO____BUFSZ;
-        char keep = 1;
-        while(keep)
-        {   while(in->bufs < bytes && keep)
+        unsigned count, start;
+        while(!parser.body)
+        {   count = 0;
+            start = in->bufi;
+            while(!cpcio_eof_is(in) && (count == 0 || in->bufi < in->bufs))
             {   cpcio_getc_is(in);
-                keep = memcmp(in->cbuf + in->bufs - 4, "\r\n\r\n", 4) != 0;   }
-            cpcss_partial_parse_header(&parser, in->cbuf, in->bufs, out);   }   }
+                ++count;   }
+            cpcss_partial_parse_header(&parser, in->cbuf + start, count, out);   }
+        cpcss_free_partial_parser(&parser);   }
     return succ;   }
 
 int cpcss_parse_http_string(const char *str, pcpcss_http_req out)
@@ -591,25 +544,32 @@ int cpcss_parse_http_string(const char *str, pcpcss_http_req out)
     return succ;
 }
 
-int cpcss_parse_response(const char *str, pcpcss_http_req res)
+int cpcss_parse_response(cpcio_istream is, pcpcss_http_req res)
 {   int succ = 0;
     uint16_t resnum = 0;
-    const char *numstr = strchr(str, ' ');
+    char *numstr = cpcio_gtoken_is(is);
+    free(numstr);
+    numstr = cpcio_gtoken_is(is);
     if(numstr == NULL)
         succ = -1;
     else
-    {   ++numstr;
-        for(; *numstr != ' ' && resnum < 600; ++numstr)
-        {   if(*numstr >= '0' && *numstr <= '9')
+    {   char *it = numstr;
+        for(; *it != '\0' && resnum < 600; ++it)
+        {   if(*it >= '0' && *it <= '9')
             {   resnum *= 10;
-                resnum += *numstr - '0';   } else
+                resnum += *it - '0';   } else
             resnum = 700;   }
         if(resnum > 99 && resnum < 600)
-        {   numstr = strchr(numstr, '\n');
-            if(numstr == NULL)
+        {   int x = cpcio_getc_is(is), y = cpcio_getc_is(is);
+            while(!cpcio_eof_is(is) && (x != '\r' || y != '\n'))
+            {   x = y;
+                y = cpcio_getc_is(is);   }
+            if(cpcio_eof_is(is))
                 succ = -1; else
-            cpcss_init_http_response(res, resnum, NULL), succ = cpcss____parse_http_req(numstr + 1, res);   } else
-        succ = -1;   }
+            {   cpcss_init_http_response(res, resnum, NULL);
+                succ = cpcss_parse_http_stream(is, res);   }   } else
+        succ = -1;
+        free(numstr);   }
     return succ;   }
 
 void cpcss_free_request(pcpcss_http_req this)
