@@ -163,7 +163,22 @@ int cpcss_http____check_resize(pcpcss_http_req this)
         succ = -1;   }
     return succ;   }
 
-int cpcss_http____req_meth_str(char *str, cpcss_req_method_t meth)
+int cpcss_http_req_meth_num(const char *str, cpcss_req_method_t *meth)
+{   int succ = 0;
+    if(strcmp(str, "GET") == 0)
+        *meth = CPCSS_GET; else if(strcmp(str, "PUT") == 0)
+        *meth = CPCSS_PUT; else if(strcmp(str, "HEAD") == 0)
+        *meth = CPCSS_HEAD; else if(strcmp(str, "POST") == 0)
+        *meth = CPCSS_POST; else if(strcmp(str, "PATCH") == 0)
+        *meth = CPCSS_PATCH; else if(strcmp(str, "TRACE") == 0)
+        *meth = CPCSS_TRACE; else if(strcmp(str, "DELETE") == 0)
+        *meth = CPCSS_DELETE; else if(strcmp(str, "CONNECT") == 0)
+        *meth = CPCSS_CONNECT; else if(strcmp(str, "OPTIONS") == 0)
+        *meth = CPCSS_OPTIONS; else
+        succ = -1;
+    return succ;   }
+
+int cpcss_http_req_meth_str(char *str, cpcss_req_method_t meth)
 {   int succ = 0;
     switch(meth)
     {   case CPCSS_GET:
@@ -284,7 +299,7 @@ int cpcss_make_request(cpcpcss_http_req this, cpcss_client_sock *cs, pcpcss_http
             succ = -1;
         else if(ready == 0)
             succ = CPCSS_REQ_TIMEOUT_ERROR; else
-        succ = cpcss_read_response(NULL, res);   }
+        succ = cpcss_parse_response(NULL, res);   }
     return succ;   }
 
 int cpcss_send_request(cpcpcss_http_req this, cpcss_client_sock *cs)
@@ -324,17 +339,39 @@ int cpcss_send_request(cpcpcss_http_req this, cpcss_client_sock *cs)
     succ = CPCSS_REQ_MEMORY_ERROR;
     return succ;   }
 
-int cpcss_read_response(cpcio_istream is, pcpcss_http_req res)
-{   struct cpcss_partial_parse_data parser;
-    int succ = cpcss_init_partial_parser(&parser, 32768);
-    if(succ == 0)
-    {   char resdat[16384];
-        for(unsigned bytes = cpcio_rd(is, resdat, sizeof resdat); cpcio_istream_ready(is); bytes = cpcio_rd(is, resdat, sizeof resdat))
-            cpcss_partial_parse_header(&parser, resdat, bytes, res);
-        succ = CPCSS_REQ_MEMORY_ERROR;   } else
-    succ = CPCSS_REQ_CONNECTION_ERROR;
+int cpcss_parse_request(cpcio_istream is, pcpcss_http_req req)
+{
+    int succ = 0;
     return succ;
 }
+
+int cpcss_parse_response(cpcio_istream is, pcpcss_http_req res)
+{   int succ = 0;
+    uint16_t resnum = 0;
+    char *numstr = cpcio_gtoken_is(is);
+    free(numstr);
+    numstr = cpcio_gtoken_is(is);
+    if(numstr == NULL)
+        succ = -1;
+    else
+    {   char *it = numstr;
+        for(; *it != '\0' && resnum < 600; ++it)
+        {   if(*it >= '0' && *it <= '9')
+            {   resnum *= 10;
+                resnum += *it - '0';   } else
+            resnum = 700;   }
+        if(resnum > 99 && resnum < 600)
+        {   int x = cpcio_getc_is(is), y = cpcio_getc_is(is);
+            while(!cpcio_eof_is(is) && (x != '\r' || y != '\n'))
+            {   x = y;
+                y = cpcio_getc_is(is);   }
+            if(cpcio_eof_is(is))
+                succ = -1; else
+            {   cpcss_init_http_response(res, resnum, NULL);
+                succ = cpcss_parse_http_stream(is, res);   }   } else
+        succ = -1;
+        free(numstr);   }
+    return succ;   }
 
 size_t cpcss____reqsz(cpcpcss_http_req this)
 {   size_t cnt = 0, klen;
@@ -369,7 +406,7 @@ void cpcss____req_str(char *str, cpcpcss_http_req this)
 
 size_t cpcss_request_size(cpcpcss_http_req this)
 {   char reqmeth[12];
-    cpcss_http____req_meth_str(reqmeth, this->rru.req.meth);
+    cpcss_http_req_meth_str(reqmeth, this->rru.req.meth);
     size_t cnt = strlen(reqmeth) + 1;
     char *pth = strchr(this->rru.req.requrl, '/');
     if(pth != NULL)
@@ -381,7 +418,7 @@ size_t cpcss_request_size(cpcpcss_http_req this)
 
 void cpcss_request_str(char *str, cpcpcss_http_req this)
 {   char *strptr = str;
-    cpcss_http____req_meth_str(strptr, this->rru.req.meth);
+    cpcss_http_req_meth_str(strptr, this->rru.req.meth);
     strptr += strlen(strptr);
     *strptr = ' ';
     ++strptr;
@@ -543,34 +580,6 @@ int cpcss_parse_http_string(const char *str, pcpcss_http_req out)
     succ = CPCSS_REQ_MEMORY_ERROR;
     return succ;
 }
-
-int cpcss_parse_response(cpcio_istream is, pcpcss_http_req res)
-{   int succ = 0;
-    uint16_t resnum = 0;
-    char *numstr = cpcio_gtoken_is(is);
-    free(numstr);
-    numstr = cpcio_gtoken_is(is);
-    if(numstr == NULL)
-        succ = -1;
-    else
-    {   char *it = numstr;
-        for(; *it != '\0' && resnum < 600; ++it)
-        {   if(*it >= '0' && *it <= '9')
-            {   resnum *= 10;
-                resnum += *it - '0';   } else
-            resnum = 700;   }
-        if(resnum > 99 && resnum < 600)
-        {   int x = cpcio_getc_is(is), y = cpcio_getc_is(is);
-            while(!cpcio_eof_is(is) && (x != '\r' || y != '\n'))
-            {   x = y;
-                y = cpcio_getc_is(is);   }
-            if(cpcio_eof_is(is))
-                succ = -1; else
-            {   cpcss_init_http_response(res, resnum, NULL);
-                succ = cpcss_parse_http_stream(is, res);   }   } else
-        succ = -1;
-        free(numstr);   }
-    return succ;   }
 
 void cpcss_free_request(pcpcss_http_req this)
 {   cpcss_free_response(this);

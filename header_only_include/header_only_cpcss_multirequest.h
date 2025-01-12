@@ -95,7 +95,7 @@ int cpcss_multirequest_timeout(cpcss_mr_callback_t cb, struct cpcss____http_requ
                     csls[j].cs = NULL;
                     --i;
                     is = cpcss_open_istream(curr);
-                    if(cpcss_read_response(is, &res) != 0)
+                    if(cpcss_parse_response(is, &res) != 0)
                     {   --succ;
                         cb(url, NULL, NULL);   } else
                     cb(url, curr, &res);

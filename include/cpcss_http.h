@@ -76,6 +76,16 @@ int cpcss_init_http_response(pcpcss_http_req this, cpcss_res_code_t res, char *b
 // returns zero on success
 int cpcss_http_cpy(pcpcss_http_req dest, cpcpcss_http_req src);
 
+// parses a request method string as a number
+// the string must be in upper case, such as GET, PUT, etc
+// returns zero on success
+int cpcss_http_req_meth_num(const char *str, cpcss_req_method_t *meth);
+
+// writes the request method as a string
+// request method will be all upper case, such as GET, PUT, etc
+// returns zero on success
+int cpcss_http_req_meth_str(char *str, cpcss_req_method_t meth);
+
 // sets the request method
 // if the request method is not one of the nine macros defined above
 // the request pointed to by this remains unchanged, -1 is returned
@@ -111,8 +121,13 @@ int cpcss_make_request(cpcpcss_http_req this, cpcss_client_sock *cs, pcpcss_http
 // Send the request but do not wait for response
 int cpcss_send_request(cpcpcss_http_req this, cpcss_client_sock *cs);
 
-// Read the response of a request
-int cpcss_read_response(cpcio_istream is, pcpcss_http_req res);
+// parses raw request from a stream
+// returns zero on success
+int cpcss_parse_request(cpcio_istream is, pcpcss_http_req req);
+
+// parses raw response from a stream
+// returns zero on success
+int cpcss_parse_response(cpcio_istream is, pcpcss_http_req res);
 
 // gets the size of the request in bytes if it were to be sent
 // allocate this size plus one for str of cpcss_request_str
@@ -146,10 +161,6 @@ int cpcss_parse_http_stream(cpcio_istream in, pcpcss_http_req out);
 // the string MUST only contain the header and not the body
 // specifically, the last four characters must be CR LF CR LF
 int cpcss_parse_http_string(const char *str, pcpcss_http_req out);
-
-// parses raw response
-// returns zero on success
-int cpcss_parse_response(cpcio_istream is, pcpcss_http_req res);
 
 // frees resources used by the request object
 // if the this pointer points to heap allocated memory, it needs to be freed separately
