@@ -15,8 +15,8 @@
 struct cpcss_transform_io
 {   void*internal;
     void(*init)(void*,struct cpcss_socket_impl*);
-    int(*read)(void*,char*,size_t);
-    int(*write)(void*,const char*,size_t);
+    size_t(*read)(void*,void*,size_t);
+    size_t(*write)(void*,const void*,size_t);
     int(*ready)(void*);
     int(*cleanup)(void*);   };
 
@@ -35,14 +35,14 @@ static inline void cpcss_noop_init(void*,struct cpcss_socket_impl*)
 {}
 
 // reader
-int cpcss_read_ss(void *src,
-                    char *arr,
-                    size_t size);
+size_t cpcss_read_ss(void *src,
+                     void *arr,
+                     size_t size);
 
 // writer
-int cpcss_write_ss(void *dest,
-                    const char *arr,
-                    size_t size);
+size_t cpcss_write_ss(void *dest,
+                      const void *arr,
+                      size_t size);
 
 // closes the streams
 int cpcss_close_ss(void *stream);

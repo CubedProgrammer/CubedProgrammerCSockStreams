@@ -46,9 +46,9 @@ int cpcss_ready(void *src)
 #endif
 }
 
-int cpcss_read_ss(void *src,
-                  char *arr,
-                  size_t size)
+size_t cpcss_read_ss(void *src,
+                     void *arr,
+                     size_t size)
 {cpcss____sh *as = src;
 #ifdef _WIN32
     return recv(*as, arr, size,0);
@@ -57,9 +57,9 @@ int cpcss_read_ss(void *src,
 #endif
 }
 
-int cpcss_write_ss(void *dest,
-                     const char *arr,
-                     size_t size)
+size_t cpcss_write_ss(void *dest,
+                      const void *arr,
+                      size_t size)
 {   cpcss____sh *ad = dest; return send(*ad, arr, size, 0);   }
 
 int cpcss_close_ss(void *stream)
