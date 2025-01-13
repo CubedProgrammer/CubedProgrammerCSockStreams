@@ -71,6 +71,10 @@ int cpcss_init_http_request(pcpcss_http_req this, const char *url, uint16_t port
 // returns zero on success
 int cpcss_init_http_response(pcpcss_http_req this, cpcss_res_code_t res, char *body);
 
+// initializes just the headers of an HTTP request/response
+// returns zero on success
+int cpcss_init_http_headers(pcpcss_http_req this);
+
 // deep copies the src object to the dest, anything originally in dest will be overwritten
 // and thus, there will be a memory leak if dest was an existing unfreed request or response
 // returns zero on success

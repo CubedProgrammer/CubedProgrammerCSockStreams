@@ -20,18 +20,13 @@
 #define PARSE_CHUNK_LENGTH 32768
 
 int cpcss_init_http_request(pcpcss_http_req this, const char *url, uint16_t port)
-{   size_t len = strlen(url);
-    this->rru.req.port = port;
-    this->rru.req.meth = CPCSS_GET;
-    this->body = NULL;
-    this->hcnt = 0;
-    this->hbuckets = 60;
-    this->headers = malloc(sizeof(char *) * this->hbuckets);
-    int succ = 0;
-    if(this->headers != NULL)
-    {   for(char **it = this->headers; it != this->headers + this->hbuckets; ++it)
-        	*it = NULL;
+{   int succ = cpcss_init_http_headers(this);
+    if(succ == 0)
+    {   size_t len = strlen(url);
         this->rru.req.requrl = malloc(1 + len);
+        this->rru.req.port = port;
+        this->rru.req.meth = CPCSS_GET;
+        this->body = NULL;
         if(this->rru.req.requrl != NULL)
         {   strcpy(this->rru.req.requrl, url);
             char *slash = strchr(this->rru.req.requrl, '/');
@@ -41,27 +36,29 @@ int cpcss_init_http_request(pcpcss_http_req this, const char *url, uint16_t port
                     succ = -1; else
                 *slash = '/';   } else
             succ = cpcss_set_header(this, "host", this->rru.req.requrl);   } else
-        succ = -1;   } else
-    succ = -1;
+        succ = -1;   }
     return succ;   }
 
 int cpcss_init_http_response(pcpcss_http_req this, cpcss_res_code_t res, char *body)
+{   int succ = cpcss_init_http_headers(this);
+    if(succ == 0)
+    {   if(res >= 100 && res <= 599)
+            this->rru.res = res; else
+        this->rru.res = 200;
+        this->body = body;   } else
+    this->body = NULL;
+    return succ;   }
+
+int cpcss_init_http_headers(pcpcss_http_req this)
 {   this->hcnt = 0;
     this->hbuckets = 60;
-    this->headers = malloc(sizeof(char *) * this->hbuckets);
-    if(res >= 100 && res <= 599)
-        this->rru.res = res;
-    else
-        this->rru.res = 200;
-    int succ = 0;
+    this->headers = malloc(sizeof(char*) * this->hbuckets);
+    this->body = NULL;
     if(this->headers != NULL)
     {   for(char **it = this->headers; it != this->headers + this->hbuckets; ++it)
             *it = NULL;
-        succ = -1;
-        this->body = body;   }
-    else
-        this->body = NULL;
-    return succ;   }
+        return 0;   } else
+    return -1;   }
 
 int cpcss_http_cpy(pcpcss_http_req dest, cpcpcss_http_req src)
 {   int succ = 0;
@@ -166,16 +163,16 @@ int cpcss_http____check_resize(pcpcss_http_req this)
 int cpcss_http_req_meth_num(const char *str, cpcss_req_method_t *meth)
 {   int succ = 0;
     if(strcmp(str, "GET") == 0)
-        *meth = CPCSS_GET; else if(strcmp(str, "PUT") == 0)
-        *meth = CPCSS_PUT; else if(strcmp(str, "HEAD") == 0)
-        *meth = CPCSS_HEAD; else if(strcmp(str, "POST") == 0)
-        *meth = CPCSS_POST; else if(strcmp(str, "PATCH") == 0)
-        *meth = CPCSS_PATCH; else if(strcmp(str, "TRACE") == 0)
-        *meth = CPCSS_TRACE; else if(strcmp(str, "DELETE") == 0)
-        *meth = CPCSS_DELETE; else if(strcmp(str, "CONNECT") == 0)
-        *meth = CPCSS_CONNECT; else if(strcmp(str, "OPTIONS") == 0)
-        *meth = CPCSS_OPTIONS; else
-        succ = -1;
+    *meth = CPCSS_GET; else if(strcmp(str, "PUT") == 0)
+    *meth = CPCSS_PUT; else if(strcmp(str, "HEAD") == 0)
+    *meth = CPCSS_HEAD; else if(strcmp(str, "POST") == 0)
+    *meth = CPCSS_POST; else if(strcmp(str, "PATCH") == 0)
+    *meth = CPCSS_PATCH; else if(strcmp(str, "TRACE") == 0)
+    *meth = CPCSS_TRACE; else if(strcmp(str, "DELETE") == 0)
+    *meth = CPCSS_DELETE; else if(strcmp(str, "CONNECT") == 0)
+    *meth = CPCSS_CONNECT; else if(strcmp(str, "OPTIONS") == 0)
+    *meth = CPCSS_OPTIONS; else
+    succ = -1;
     return succ;   }
 
 int cpcss_http_req_meth_str(char *str, cpcss_req_method_t meth)
@@ -342,6 +339,32 @@ int cpcss_send_request(cpcpcss_http_req this, cpcss_client_sock *cs)
 int cpcss_parse_request(cpcio_istream is, pcpcss_http_req req)
 {
     int succ = 0;
+    const char *delim = cpcio_get_delim(is);
+    char lastdelim[121];
+    strcpy(lastdelim, delim);
+    cpcio_use_delim(is, "\n");
+    char *str = cpcio_gtoken_is(is);
+    cpcio_use_delim(is, lastdelim);
+    if(str != NULL)
+    {   char *space = strchr(str, ' ');
+        if(space != NULL)
+        {   *space = '\0';
+            succ = cpcss_init_http_headers(req);
+            if(succ == 0)
+            {   succ = cpcss_http_req_meth_num(str, &req->rru.req.meth);
+                if(succ == 0)
+                {   char *nextspace = strchr(++space, ' ');
+                    if(nextspace != NULL)
+                    {   req->rru.req.requrl = malloc(nextspace - space + 1);
+                        if(req->rru.req.requrl != NULL)
+                        {   memcpy(req->rru.req.requrl, space, nextspace - space);
+                            req->rru.req.requrl[nextspace - space] = '\0';
+                            succ = cpcss_parse_http_stream(is, req);   } else
+                        succ = -1;   } else
+                    succ = -1;   }   }   } else
+        succ = -1;
+        free(str);   } else
+    succ = -1;
     return succ;
 }
 
