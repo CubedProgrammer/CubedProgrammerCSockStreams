@@ -21,6 +21,7 @@ struct cpcss_transform_io
     int(*cleanup)(void*);   };
 
 // open streams
+// buffer is toggled off
 struct cpcio____istream *cpcss_open_istream(struct cpcss_socket_impl *ss);
 struct cpcio____istream *cpcss_open_istream_ex(struct cpcss_socket_impl *ss,const struct cpcss_transform_io *trans);
 

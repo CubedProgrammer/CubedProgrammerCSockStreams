@@ -19,7 +19,7 @@ struct cpcss_parallel_mr_t
 int cpcss_parallel_thrd_func(void *arg)
 {   struct cpcss_parallel_mr_t *truearg = arg;
     struct cpcss____http_request res;
-    int succ = cpcss_make_request(truearg->req, &truearg->csurl.cs, &res);
+    int succ = cpcss_make_request_sync(truearg->req, NULL, &res);
     if(succ == 0)
     {   truearg->cb(truearg->csurl.url, truearg->csurl.cs, &res);
         cpcss_free_response(&res);
@@ -67,7 +67,7 @@ int cpcss_multirequest_timeout(cpcss_mr_callback_t cb, struct cpcss____http_requ
             free(csls);
             csls = tmp;   }
         csls[cscnt].url = url;
-        succ += cpcss_send_request(req, &csls[cscnt].cs) == 0;
+        succ += cpcss_send_request(req, NULL) == 0;
         ++cscnt;   }
     va_end(urlls);
     tv.tv_sec = ms / 1000;

@@ -115,13 +115,13 @@ int cpcss_erase_header(pcpcss_http_req this, const char *key);
 // Returns NULL if the field does not exist
 const char *cpcss_get_header(cpcpcss_http_req this, const char *key);
 
-// makes the request to an http server
+// makes the request to an http server, synchronously, blocks until the server responds
 // res will be filled with the server's response
 // returns zero on success
 // on error, returns either CPCSS_REQ_MESSAGE_ERROR, CPCSS_REQ_CONNECTION_ERROR, or CPCSS_REQ_MEMORY_ERROR
 // indicating either the response message was invalid, connection failed, or memory allocation failed
 // note invalid response message could also mean there isn't enough memory, but only for the response
-int cpcss_make_request(cpcpcss_http_req this, cpcio_ostream os, pcpcss_http_req res);
+int cpcss_make_request_sync(cpcpcss_http_req this, pcpcss_http_req res, cpcio_istream is, cpcio_ostream os);
 
 // Send the request but do not wait for response
 // returns zero on success

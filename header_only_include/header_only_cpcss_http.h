@@ -281,22 +281,10 @@ const char *cpcss_get_header(cpcpcss_http_req this, const char *key)
     	val += strlen(val) + 1;
     return val;   }
 
-int cpcss_make_request(cpcpcss_http_req this, cpcio_ostream os, pcpcss_http_req res)
-{   int ready, succ = cpcss_send_request(this, os);
+int cpcss_make_request_sync(cpcpcss_http_req this, pcpcss_http_req res, cpcio_istream is, cpcio_ostream os)
+{   int succ = cpcss_send_request(this, os);
     if(succ == 0)
-    {   fd_set fds, *fdsp = &fds;
-        struct timeval tv, *tvp = &tv;
-        tv.tv_sec = 15;
-        tv.tv_usec = 0;
-        cpcss____sh sock = *cpcss_client_socket_get_server(NULL);
-        FD_ZERO(fdsp);
-		FD_SET(sock, fdsp);
-        ready = select(sock + 1, fdsp, NULL, NULL, tvp);
-        if(ready == -1)
-            succ = -1;
-        else if(ready == 0)
-            succ = CPCSS_REQ_TIMEOUT_ERROR; else
-        succ = cpcss_parse_response(NULL, res);   }
+    {   succ = cpcss_parse_response(is, res);   }
     return succ;   }
 
 int cpcss_send_request(cpcpcss_http_req this, cpcio_ostream os)
