@@ -3,6 +3,7 @@
 #define Included_cpcss_http_h
 #include<stdint.h>
 #include<cpcio_istream.h>
+#include<cpcio_ostream.h>
 #include<cpcss_socket.h>
 
 // request methods
@@ -120,16 +121,25 @@ const char *cpcss_get_header(cpcpcss_http_req this, const char *key);
 // on error, returns either CPCSS_REQ_MESSAGE_ERROR, CPCSS_REQ_CONNECTION_ERROR, or CPCSS_REQ_MEMORY_ERROR
 // indicating either the response message was invalid, connection failed, or memory allocation failed
 // note invalid response message could also mean there isn't enough memory, but only for the response
-int cpcss_make_request(cpcpcss_http_req this, cpcss_client_sock *cs, pcpcss_http_req res);
+int cpcss_make_request(cpcpcss_http_req this, cpcio_ostream os, pcpcss_http_req res);
 
 // Send the request but do not wait for response
-int cpcss_send_request(cpcpcss_http_req this, cpcss_client_sock *cs);
+// returns zero on success
+int cpcss_send_request(cpcpcss_http_req this, cpcio_ostream os);
+
+// Connects to a server so a request can be made
+// simple TCP connection to the server, no data sent otherwise
+// the socket will be returned to cs
+// returns zero on success
+int cpcss_connect_http(cpcpcss_http_req this, cpcss_socket *cs);
 
 // parses raw request from a stream
+// remember to free the request
 // returns zero on success
 int cpcss_parse_request(cpcio_istream is, pcpcss_http_req req);
 
 // parses raw response from a stream
+// remember to free the response
 // returns zero on success
 int cpcss_parse_response(cpcio_istream is, pcpcss_http_req res);
 

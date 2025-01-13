@@ -281,14 +281,14 @@ const char *cpcss_get_header(cpcpcss_http_req this, const char *key)
     	val += strlen(val) + 1;
     return val;   }
 
-int cpcss_make_request(cpcpcss_http_req this, cpcss_client_sock *cs, pcpcss_http_req res)
-{   int ready, succ = cpcss_send_request(this, cs);
+int cpcss_make_request(cpcpcss_http_req this, cpcio_ostream os, pcpcss_http_req res)
+{   int ready, succ = cpcss_send_request(this, os);
     if(succ == 0)
     {   fd_set fds, *fdsp = &fds;
         struct timeval tv, *tvp = &tv;
         tv.tv_sec = 15;
         tv.tv_usec = 0;
-        cpcss____sh sock = *cpcss_client_socket_get_server(*cs);
+        cpcss____sh sock = *cpcss_client_socket_get_server(NULL);
         FD_ZERO(fdsp);
 		FD_SET(sock, fdsp);
         ready = select(sock + 1, fdsp, NULL, NULL, tvp);
@@ -299,41 +299,40 @@ int cpcss_make_request(cpcpcss_http_req this, cpcss_client_sock *cs, pcpcss_http
         succ = cpcss_parse_response(NULL, res);   }
     return succ;   }
 
-int cpcss_send_request(cpcpcss_http_req this, cpcss_client_sock *cs)
+int cpcss_send_request(cpcpcss_http_req this, cpcio_ostream os)
 {   int succ = 0;
     size_t reqsz = cpcss_request_size(this);
     char *reqdat = malloc(reqsz);
     if(reqdat != NULL)
     {   cpcss_request_str(reqdat, this);
-        const char *host = cpcss_get_header(this, "host");
-        struct in_addr ia;
-        int valid = inet_aton(host, &ia);
-        if(valid)
-		{   *cs = cpcss_connect_client(host, this->rru.req.port);
-            if(*cs == NULL)
-            	succ = CPCSS_REQ_CONNECTION_ERROR;   } else
-        {   struct addrinfo *addrls;
-            int v = getaddrinfo(host, NULL, NULL, &addrls);
-            if(v == 0)
-            {
-                const char *ipstr;
-                struct sockaddr_in *addrin;
-                for(struct addrinfo *ainode = addrls; ainode != NULL; ainode = ainode->ai_next)
-                {   addrin = (struct sockaddr_in *)ainode->ai_addr;
-                    ipstr = inet_ntoa(addrin->sin_addr);
-                    *cs = cpcss_connect_client(ipstr, this->rru.req.port);
-                    if(*cs != NULL)
-                        goto fini;   }
-                fini:
-                freeaddrinfo(addrls);   } else
-            succ = CPCSS_REQ_DOMAIN_ERROR;   }
-		if(*cs != NULL)
-        {   cpcss____sh sock = *cpcss_client_socket_get_server(*cs);
-            if(send(sock, reqdat, reqsz, 0) < reqsz)
-            {   succ = CPCSS_REQ_CONNECTION_ERROR;
-                cpcss_discon_client(*cs);   }   } else
-        succ += (succ == 0) * CPCSS_REQ_CONNECTION_ERROR; free(reqdat);   } else
+        cpcio_wr(os, reqdat, reqsz);
+        cpcio_flush_os(os);
+        free(reqdat);   } else
     succ = CPCSS_REQ_MEMORY_ERROR;
+    return succ;   }
+
+int cpcss_connect_http(cpcpcss_http_req this, cpcss_socket *cs)
+{   int succ = 0;
+    const char *host = cpcss_get_header(this, "host");
+    struct in_addr ia;
+    int valid = inet_aton(host, &ia);
+    if(valid)
+	{   *cs = cpcss_connect_client(host, this->rru.req.port);   } else
+    {   struct addrinfo *addrls;
+        int v = getaddrinfo(host, NULL, NULL, &addrls);
+        if(v == 0)
+        {   const char *ipstr;
+            struct sockaddr_in *addrin;
+            for(struct addrinfo *ainode = addrls; ainode != NULL; ainode = ainode->ai_next)
+            {   addrin = (struct sockaddr_in *)ainode->ai_addr;
+                ipstr = inet_ntoa(addrin->sin_addr);
+                *cs = cpcss_connect_client(ipstr, this->rru.req.port);
+                if(*cs != NULL)
+                    goto fini;   }
+            succ = CPCSS_REQ_CONNECTION_ERROR;
+            fini:
+            freeaddrinfo(addrls);   } else
+        succ = CPCSS_REQ_DOMAIN_ERROR;   }
     return succ;   }
 
 int cpcss_parse_request(cpcio_istream is, pcpcss_http_req req)

@@ -2,7 +2,6 @@
 #ifndef Included_header_only_cpcss_socket_h
 #define Included_header_only_cpcss_socket_h
 
-#include<string.h>
 #include<cpcss_socket.h>
 #ifndef _WIN32
 #include <arpa/inet.h>
@@ -74,6 +73,7 @@ struct cpcss_socket_impl* cpcss_connect_client_ex(const char *host,uint16_t port
 
 int cpcss_close_server(struct cpcss_socket_impl *sv)
 {   cpcss____sh aso = sv->_m_sv;
+    free(sv);
 #ifdef _WIN32
 	return closesocket
 #else
@@ -82,13 +82,7 @@ int cpcss_close_server(struct cpcss_socket_impl *sv)
     (aso);   }
 
 int cpcss_discon_client(struct cpcss_socket_impl *cs)
-{   cpcss____sh aso = cs->_m_sv;
-#ifdef _WIN32
-	return closesocket
-#else
-    return close
-#endif
-    (aso);   }
+{   return cpcss_close_server(cs);   }
 
 unsigned cpcss_address_n(struct cpcss_socket_impl *socket)
 {   return htonl(socket->_m_ar.sin_addr.s_addr);   }
