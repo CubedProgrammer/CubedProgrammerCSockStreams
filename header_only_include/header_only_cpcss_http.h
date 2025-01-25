@@ -99,14 +99,15 @@ int cpcss_http_cpy(pcpcss_http_req dest, cpcpcss_http_req src)
 int cpcss_http____insens_strcmp(const char *x, const char *y)
 {   char chx, chy;
     int e = 1;
-    for(const char *xit = x, *yit = y; e && *xit != '\0' && *yit != '\0'; ++xit, ++yit)
+    const char *xit, *yit;
+    for(xit = x, yit = y; e && *xit != '\0' && *yit != '\0'; ++xit, ++yit)
     {   chx = *xit, chy = *yit;
         if(chx >= 'A' && chx <= 'Z')
             chx += 32;
         if(chy >= 'A' && chy <= 'Z')
             chy += 32;
         e = chx == chy;   }
-    return e;   }
+    return e && *xit == *yit;   }
 
 uint64_t cpcss_http____hash_key(const char *key)
 {   uint64_t hsh;
@@ -490,18 +491,14 @@ void cpcss_partial_copy(struct cpcss_partial_parse_data *dat, char tocopy, const
         dat->cnt = 0;   }   }
 
 void cpcss_partial_parse_header(struct cpcss_partial_parse_data *dat, const char *ptr, unsigned len, pcpcss_http_req out)
-{
-    static const char searchchars[] = ":\r";
+{   static const char searchchars[] = ":\r";
     const char *cpbegin = ptr, *cpend = ptr;
     const char*old, *end = ptr + len;
     char tofind;
-    size_t copycnt;
     char tocopy = 0;
     if(!dat->body)
-    {
-        if(dat->last_linefeed)
-        {
-            if(dat->last_linefeed == 3)
+    {   if(dat->last_linefeed)
+        {   if(dat->last_linefeed == 3)
             {   dat->body = ptr[0] == '\n';
                 dat->isvalue = !dat->body;
                 dat->last_linefeed = 0;   }
@@ -516,19 +513,14 @@ void cpcss_partial_parse_header(struct cpcss_partial_parse_data *dat, const char
                         ptr = checkptr + 1;   }   } else
                 {   dat->last_linefeed = 0;
                     dat->isvalue = 0;   }   } else
-            dat->last_linefeed += len;
-        }
-    }
+            dat->last_linefeed += len;   }   }
     if(!dat->body)
-    {
-        for(const char*separator = ptr; separator != end; separator += (separator != end) * (2 - dat->isvalue))
-        {
-            tofind = searchchars[dat->isvalue];
+    {   for(const char*separator = ptr; separator != end; separator += (separator != end) * (2 - dat->isvalue))
+        {   tofind = searchchars[dat->isvalue];
             separator = memchr(old = separator, tofind, end - separator);
             separator = separator == NULL ? end : separator;
             if(dat->isvalue)
-            {
-                if(separator == end)
+            {   if(separator == end)
                 {   if(!dat->ignore)
                         tocopy = 1;   } else if(end - separator <= 3)
                 {   dat->last_linefeed = end - separator;
@@ -543,29 +535,25 @@ void cpcss_partial_parse_header(struct cpcss_partial_parse_data *dat, const char
                     separator = end;   } else if(!isspace(separator[2]))
                 {   if(!dat->ignore)
                         tocopy = 3;
+                	cpbegin = old;
+                	cpend = separator;
                     dat->isvalue = 0;
-                    dat->ignore = 0;   }
-            }
-            else
+                    dat->ignore = 0;   }   } else
             {   dat->isvalue = separator != end;
                 cpbegin = old;
                 cpend = separator;
                 tocopy = dat->isvalue + 1;   }
             if(tocopy)
             {   cpcss_partial_copy(dat, tocopy, cpbegin, cpend, out);
-                tocopy = 0;   }
-        }
-    }
+                tocopy = 0;   }   }   }
     if(dat->body)
-        cpcss_partial_copy(dat, 3, cpbegin, cpend, out);
-}
+        cpcss_partial_copy(dat, 3, cpbegin, cpend, out);   }
 
 int cpcss_parse_http_stream(cpcio_istream in, pcpcss_http_req out)
 {   struct cpcss_partial_parse_data parser;
     int succ = cpcss_init_partial_parser(&parser, 32768);
     if(succ == 0)
-    {   unsigned bytes = CPCIO____BUFSZ;
-        unsigned count, start;
+    {   unsigned count, start;
         while(!parser.body)
         {   count = 0;
             start = in->bufi;

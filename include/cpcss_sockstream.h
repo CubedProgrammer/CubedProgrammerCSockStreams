@@ -32,7 +32,7 @@ struct cpcio____ostream *cpcss_open_ostream_ex(struct cpcss_socket_impl *ss,cons
 int cpcss_ready(void *src);
 
 // no-op init function
-static inline void cpcss_noop_init(void*,struct cpcss_socket_impl*)
+static inline void cpcss_noop_init(void*a,struct cpcss_socket_impl*b)
 {}
 
 // reader

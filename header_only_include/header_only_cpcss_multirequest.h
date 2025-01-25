@@ -19,7 +19,7 @@ struct cpcss_parallel_mr_t
 int cpcss_parallel_thrd_func(void *arg)
 {   struct cpcss_parallel_mr_t *truearg = arg;
     struct cpcss____http_request res;
-    int succ = cpcss_make_request_sync(truearg->req, NULL, &res);
+    int succ = cpcss_make_request_sync(truearg->req, &res, NULL, NULL);
     if(succ == 0)
     {   truearg->cb(truearg->csurl.url, truearg->csurl.cs, &res);
         cpcss_free_response(&res);
