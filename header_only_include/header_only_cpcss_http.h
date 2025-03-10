@@ -490,8 +490,9 @@ void cpcss_partial_copy(struct cpcss_partial_parse_data *dat, char tocopy, const
         cpcss_set_header(out, key, val);
         dat->cnt = 0;   }   }
 
-void cpcss_partial_parse_header(struct cpcss_partial_parse_data *dat, const char *ptr, unsigned len, pcpcss_http_req out)
+unsigned cpcss_partial_parse_header(struct cpcss_partial_parse_data *dat, const char *ptr, unsigned len, pcpcss_http_req out)
 {   static const char searchchars[] = ":\r";
+    unsigned remaining = 0;
     const char *cpbegin = ptr, *cpend = ptr;
     const char*old, *end = ptr + len;
     char tofind;
@@ -547,7 +548,9 @@ void cpcss_partial_parse_header(struct cpcss_partial_parse_data *dat, const char
             {   cpcss_partial_copy(dat, tocopy, cpbegin, cpend, out);
                 tocopy = 0;   }   }   }
     if(dat->body)
-        cpcss_partial_copy(dat, 3, cpbegin, cpend, out);   }
+    {   cpcss_partial_copy(dat, 3, cpbegin, cpend, out);
+        remaining = len - (cpend - ptr);   }
+    return remaining;   }
 
 int cpcss_parse_http_stream(cpcio_istream in, pcpcss_http_req out)
 {   struct cpcss_partial_parse_data parser;
@@ -560,7 +563,7 @@ int cpcss_parse_http_stream(cpcio_istream in, pcpcss_http_req out)
             while(!cpcio_eof_is(in) && (count == 0 || in->bufi < in->bufs))
             {   cpcio_getc_is(in);
                 ++count;   }
-            cpcss_partial_parse_header(&parser, in->cbuf + start, count, out);   }
+            in->bufi -= cpcss_partial_parse_header(&parser, in->cbuf + start, count, out);   }
         cpcss_free_partial_parser(&parser);   }
     return succ;   }
 
