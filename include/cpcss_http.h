@@ -165,6 +165,7 @@ int cpcss_init_partial_parser(struct cpcss_partial_parse_data *dat, unsigned fie
 
 // parse a part of the request or response
 // the partial parse data struct must be initialized
+// returns number of remaining bytes in the buffer
 unsigned cpcss_partial_parse_header(struct cpcss_partial_parse_data *dat, const char *ptr, unsigned len, pcpcss_http_req out);
 
 // parses the headers from a stream

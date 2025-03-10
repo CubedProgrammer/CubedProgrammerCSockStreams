@@ -549,21 +549,21 @@ unsigned cpcss_partial_parse_header(struct cpcss_partial_parse_data *dat, const 
                 tocopy = 0;   }   }   }
     if(dat->body)
     {   cpcss_partial_copy(dat, 3, cpbegin, cpend, out);
-        remaining = len - (cpend - ptr);   }
+        remaining = len - (cpend + 4 - ptr);   }
     return remaining;   }
 
-int cpcss_parse_http_stream(cpcio_istream in, pcpcss_http_req out)
+int cpcss_parse_http_stream(cpcio_istream is, pcpcss_http_req out)
 {   struct cpcss_partial_parse_data parser;
     int succ = cpcss_init_partial_parser(&parser, 32768);
     if(succ == 0)
     {   unsigned count, start;
         while(!parser.body)
         {   count = 0;
-            start = in->bufi;
-            while(!cpcio_eof_is(in) && (count == 0 || in->bufi < in->bufs))
-            {   cpcio_getc_is(in);
+            start = is->bufi == is->bufs ? 0 : is->bufi;
+            while(!cpcio_eof_is(is) && (is->bufi < is->bufs|| count == 0))
+            {   cpcio_getc_is(is);
                 ++count;   }
-            in->bufi -= cpcss_partial_parse_header(&parser, in->cbuf + start, count, out);   }
+            is->bufi -= cpcss_partial_parse_header(&parser, is->cbuf + start, count, out);   }
         cpcss_free_partial_parser(&parser);   }
     return succ;   }
 
