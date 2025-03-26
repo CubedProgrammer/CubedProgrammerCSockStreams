@@ -59,7 +59,7 @@ struct cpcss_socket_impl *cpcss_connect_client(const char *host,uint16_t port)
 
 struct cpcss_socket_impl* cpcss_connect_client_ex(const char *host,uint16_t port,int v6)
 {   cpcss____sh sv;
-    cpcss____sa ad, *adp = &ad;
+    cpcss____sa ad;
     sv = socket(AF_INET, SOCK_STREAM, 0);
     if(sv>=0)
     {   ad.sin_family = AF_INET;

@@ -10,6 +10,7 @@
 #include<sys/ioctl.h>
 #endif
 #include<ctype.h>
+#include<limits.h>
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -325,14 +326,17 @@ int cpcss_connect_http(cpcpcss_http_req this, cpcss_socket *cs)
     return succ;   }
 
 int cpcss_parse_request(cpcio_istream is, pcpcss_http_req req)
-{
-    int succ = 0;
+{   return cpcss_parse_request_ex(is, req, LONG_MAX, LONG_MAX, NULL);   }
+
+int cpcss_parse_request_ex(cpcio_istream is, pcpcss_http_req req, long tlimit, size_t climit, cpcpcss_http_req filter)
+{   int succ = 0;
     const char *delim = cpcio_get_delim(is);
     char lastdelim[121];
     strcpy(lastdelim, delim);
     cpcio_use_delim(is, "\n");
     char *str = cpcio_gtoken_is(is);
     cpcio_use_delim(is, lastdelim);
+    printf("%d is src cpcss\n", *(int*)is->src);
     if(str != NULL)
     {   char *space = strchr(str, ' ');
         if(space != NULL)
@@ -347,14 +351,13 @@ int cpcss_parse_request(cpcio_istream is, pcpcss_http_req req)
                         if(req->rru.req.requrl != NULL)
                         {   memcpy(req->rru.req.requrl, space, nextspace - space);
                             req->rru.req.requrl[nextspace - space] = '\0';
-                            succ = cpcss_parse_http_stream(is, req);   } else
+                            succ = cpcss_parse_http_stream_ex(is, req, tlimit, climit, filter);   } else
                         succ = -1;   } else
                     succ = -1;   }   }   } else
         succ = -1;
         free(str);   } else
     succ = -1;
-    return succ;
-}
+    return succ;   }
 
 int cpcss_parse_response(cpcio_istream is, pcpcss_http_req res)
 {   int succ = 0;
@@ -553,17 +556,39 @@ unsigned cpcss_partial_parse_header(struct cpcss_partial_parse_data *dat, const 
     return remaining;   }
 
 int cpcss_parse_http_stream(cpcio_istream is, pcpcss_http_req out)
+{   return cpcss_parse_http_stream_ex(is, out, LONG_MAX, LONG_MAX, NULL);   }
+
+int cpcss_parse_http_stream_ex(cpcio_istream is, pcpcss_http_req out, long timelimit, size_t charlimit, cpcpcss_http_req filter)
 {   struct cpcss_partial_parse_data parser;
     int succ = cpcss_init_partial_parser(&parser, 32768);
     if(succ == 0)
-    {   unsigned count, start;
-        while(!parser.body)
+    {   size_t count, start;
+        size_t back;
+        size_t total = 0;
+        fd_set fds;
+        struct timeval tv = {timelimit / 1000000, timelimit % 1000000};
+        const int fd = *(const int*)is->src;
+        int ready = 0;
+        FD_ZERO(&fds);
+        while(!cpcio_eof_is(is) && total < charlimit && (tv.tv_sec != 0 || tv.tv_usec != 0) && !parser.body)
         {   count = 0;
             start = is->bufi == is->bufs ? 0 : is->bufi;
-            while(!cpcio_eof_is(is) && (is->bufi < is->bufs|| count == 0))
-            {   cpcio_getc_is(is);
-                ++count;   }
-            is->bufi -= cpcss_partial_parse_header(&parser, is->cbuf + start, count, out);   }
+            FD_SET(fd, &fds);
+            printf("%d is fd cpcss\n", fd);
+            ready = select(fd + 1, &fds, NULL, NULL, &tv);
+            printf("%d is ready cpcss\n", ready);
+            if(ready > 0)
+            {   while(!cpcio_eof_is(is) && (is->bufi < is->bufs || count == 0))
+                {   cpcio_getc_is(is);
+                    ++count;   }
+                back = cpcss_partial_parse_header(&parser, is->cbuf + start, count, out);
+                is->bufi -= back;
+                total += count - back;   } else if(ready < 0)
+            {   tv.tv_sec = 0;
+                tv.tv_usec = 0;
+                succ = 1;   }  }
+        if(!parser.body)
+            succ = 1;
         cpcss_free_partial_parser(&parser);   }
     return succ;   }
 
