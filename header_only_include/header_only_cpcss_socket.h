@@ -85,7 +85,7 @@ int cpcss_discon_client(struct cpcss_socket_impl *cs)
 {   return cpcss_close_server(cs);   }
 
 unsigned cpcss_address_n(struct cpcss_socket_impl *socket)
-{   return htonl(socket->_m_ar.sin_addr.s_addr);   }
+{   return socket->_m_ar.sin_addr.s_addr;   }
 
 void cpcss_address_s(struct cpcss_socket_impl *socket, char *buf)
 {   char *str = inet_ntoa(socket->_m_ar.sin_addr);

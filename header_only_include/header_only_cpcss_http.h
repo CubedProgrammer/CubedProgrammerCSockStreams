@@ -336,7 +336,6 @@ int cpcss_parse_request_ex(cpcio_istream is, pcpcss_http_req req, long tlimit, s
     cpcio_use_delim(is, "\n");
     char *str = cpcio_gtoken_is(is);
     cpcio_use_delim(is, lastdelim);
-    printf("%d is src cpcss\n", *(int*)is->src);
     if(str != NULL)
     {   char *space = strchr(str, ' ');
         if(space != NULL)
@@ -565,18 +564,11 @@ int cpcss_parse_http_stream_ex(cpcio_istream is, pcpcss_http_req out, long timel
     {   size_t count, start;
         size_t back;
         size_t total = 0;
-        fd_set fds;
         struct timeval tv = {timelimit / 1000000, timelimit % 1000000};
-        const int fd = *(const int*)is->src;
-        int ready = 0;
-        FD_ZERO(&fds);
+        int ready = 1;
         while(!cpcio_eof_is(is) && total < charlimit && (tv.tv_sec != 0 || tv.tv_usec != 0) && !parser.body)
         {   count = 0;
             start = is->bufi == is->bufs ? 0 : is->bufi;
-            FD_SET(fd, &fds);
-            printf("%d is fd cpcss\n", fd);
-            ready = select(fd + 1, &fds, NULL, NULL, &tv);
-            printf("%d is ready cpcss\n", ready);
             if(ready > 0)
             {   while(!cpcio_eof_is(is) && (is->bufi < is->bufs || count == 0))
                 {   cpcio_getc_is(is);

@@ -33,6 +33,7 @@ int cpcss_close_server(struct cpcss_socket_impl *sv);
 int cpcss_discon_client(struct cpcss_socket_impl *cs);
 
 // get internet address
+// integer is in network byte order
 unsigned cpcss_address_n(struct cpcss_socket_impl *socket);
 void cpcss_address_s(struct cpcss_socket_impl *socket, char *buf);
 
