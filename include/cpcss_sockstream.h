@@ -18,6 +18,7 @@ struct cpcss_transform_io
     size_t(*read)(void*,void*,size_t);
     size_t(*write)(void*,const void*,size_t);
     int(*ready)(void*);
+    int(*select)(void**,void**,long*);
     int(*cleanup)(void*);   };
 
 // open streams
@@ -30,6 +31,9 @@ struct cpcio____ostream *cpcss_open_ostream_ex(struct cpcss_socket_impl *ss,cons
 
 // are there bytes that were sent but yet to be read
 int cpcss_ready(void *src);
+
+// select on sockets
+int cpcss_select(void **first, void **last, long *ms);
 
 // no-op init function
 static inline void cpcss_noop_init(void*a,struct cpcss_socket_impl*b)

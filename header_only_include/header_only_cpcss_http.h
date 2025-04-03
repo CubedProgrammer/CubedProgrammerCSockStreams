@@ -564,11 +564,13 @@ int cpcss_parse_http_stream_ex(cpcio_istream is, pcpcss_http_req out, long timel
     {   size_t count, start;
         size_t back;
         size_t total = 0;
-        struct timeval tv = {timelimit / 1000000, timelimit % 1000000};
         int ready = 1;
-        while(!cpcio_eof_is(is) && total < charlimit && (tv.tv_sec != 0 || tv.tv_usec != 0) && !parser.body)
+        cpcio_istream arr[1];
+        while(!cpcio_eof_is(is) && total < charlimit && timelimit != 0 && !parser.body)
         {   count = 0;
             start = is->bufi == is->bufs ? 0 : is->bufi;
+            arr[0] = is;
+            ready = cpcio_istream_select(arr, arr + 1, &timelimit);
             if(ready > 0)
             {   while(!cpcio_eof_is(is) && (is->bufi < is->bufs || count == 0))
                 {   cpcio_getc_is(is);
@@ -576,8 +578,7 @@ int cpcss_parse_http_stream_ex(cpcio_istream is, pcpcss_http_req out, long timel
                 back = cpcss_partial_parse_header(&parser, is->cbuf + start, count, out);
                 is->bufi -= back;
                 total += count - back;   } else if(ready < 0)
-            {   tv.tv_sec = 0;
-                tv.tv_usec = 0;
+            {   timelimit = 0;
                 succ = 1;   }  }
         if(!parser.body)
             succ = 1;

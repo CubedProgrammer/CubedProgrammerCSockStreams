@@ -139,7 +139,7 @@ int cpcss_connect_http(cpcpcss_http_req this, cpcss_socket *cs);
 int cpcss_parse_request(cpcio_istream is, pcpcss_http_req req);
 
 // parses raw request from a stream
-// automatically fails if peer takes longer than tlimit microseconds to respond
+// automatically fails if peer takes longer than tlimit milliseconds to respond
 // or the header has more than climit characters
 // remember to free the request
 // returns zero on success
@@ -181,7 +181,7 @@ int cpcss_parse_http_stream(cpcio_istream is, pcpcss_http_req out);
 
 // parses the headers from a stream
 // automatically failed if the headers has too many characters
-// or the peer takes too long to respond, unit is microseconds
+// or the peer takes too long to respond, unit is milliseconds
 // the body is not parsed, the last four bytes read will be CR LF CR LF
 int cpcss_parse_http_stream_ex(cpcio_istream is, pcpcss_http_req out, long timelimit, size_t charlimit, cpcpcss_http_req filter);
 
